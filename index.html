@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DailyDashboard v25 — bump this (and the matching footer text) by 1 on every future update -->
+<!-- DailyDashboard v29 — bump this (and the matching footer text) by 1 on every future update -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
@@ -114,8 +114,11 @@
     cursor:pointer; width:44px;
     transition:width .3s cubic-bezier(.22,1,.36,1), background .3s ease, box-shadow .3s ease, border-color .3s ease;
   }
-  .expand-pill:hover{ width:120px; }
-  .expand-pill.wide:hover{ width:210px; }
+  /* Hover width is set per-element via --expand-width (computed in JS from
+     the actual label text), not a guessed fixed number — otherwise shorter
+     labels leave dead space and longer ones risk clipping. 120px/210px below
+     are only a fallback in case JS hasn't run yet. */
+  .expand-pill:hover{ width:var(--expand-width, 120px); }
   .expand-pill .icon{ width:42px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
   .expand-pill .label{ font-size:12px; white-space:nowrap; opacity:0; transition:opacity .2s ease .08s; padding-right:16px; }
   .expand-pill:hover .label{ opacity:1; }
@@ -210,7 +213,7 @@
 
   <!-- Refresh button -->
   <button id="refresh-btn"
-    class="expand-pill glass fixed top-5 right-5 z-50 shadow-lg text-slate-300"
+    class="expand-pill glass fixed top-[20px] right-5 z-50 shadow-lg text-slate-300"
     title="Refresh live data">
     <span class="icon">
       <svg id="refresh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
@@ -222,18 +225,27 @@
     <span class="label">Refresh</span>
   </button>
 
-  <!-- Last updated pill (sits directly below refresh) -->
-  <div id="last-updated-bubble"
-    class="expand-pill wide glass fixed top-[76px] right-5 z-50 shadow-lg text-slate-300"
-    title="Not yet refreshed">
-    <span class="icon relative">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-slate-400">
-        <circle cx="12" cy="12" r="9"></circle>
-        <polyline points="12 7 12 12 15 14"></polyline>
-      </svg>
-      <span id="last-updated-dot" class="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-slate-500 transition-colors duration-300"></span>
-    </span>
-    <span id="last-updated-label" class="label">Not yet refreshed</span>
+  <!-- Last updated pill (sits directly below refresh). The status dot lives
+       OUTSIDE the pill itself, in this wrapper — the pill has overflow:hidden
+       to clip its label text while collapsed, and a circular clip cuts in
+       hardest right at the corners, so anything positioned near a corner
+       (even "inside" the box) still gets cut off. Anchoring the dot to this
+       unclipped wrapper via `right` also means it stays visually pinned in
+       place as the pill grows wider on hover, instead of drifting into the
+       label text. -->
+  <div class="fixed top-[76px] right-5 z-50">
+    <div id="last-updated-bubble"
+      class="expand-pill glass shadow-lg text-slate-300"
+      title="Not yet refreshed">
+      <span class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-slate-400">
+          <circle cx="12" cy="12" r="9"></circle>
+          <polyline points="12 7 12 12 15 14"></polyline>
+        </svg>
+      </span>
+      <span id="last-updated-label" class="label">Not yet refreshed</span>
+    </div>
+    <span id="last-updated-dot" class="absolute top-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-slate-500 transition-colors duration-300 pointer-events-none"></span>
   </div>
 
   <!-- Theme toggle -->
@@ -296,15 +308,15 @@
     <div class="glass glass-hover rounded-3xl p-3">
       <div class="flex flex-wrap gap-2 items-center">
         <input id="qa-title" type="text" maxlength="140" placeholder="Event title"
-          class="h-8 leading-none flex-1 min-w-[140px] bg-white/5 border border-white/10 rounded-lg px-3 text-xs text-slate-200 outline-none focus:border-white/30">
+          class="h-8 leading-8 flex-1 min-w-[140px] bg-white/5 border border-white/10 rounded-lg px-3 text-xs text-slate-200 outline-none focus:border-white/30">
 
         <input id="qa-date" type="date"
-          class="h-8 leading-none bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
+          class="h-8 leading-8 bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
 
         <div id="qa-time-fields" class="flex items-center gap-1">
-          <input id="qa-start" type="time" class="h-8 leading-none w-[92px] bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
+          <input id="qa-start" type="time" class="h-8 leading-8 w-[92px] bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
           <span class="text-slate-600 text-xs">–</span>
-          <input id="qa-end" type="time" class="h-8 leading-none w-[92px] bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
+          <input id="qa-end" type="time" class="h-8 leading-8 w-[92px] bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
         </div>
 
         <label class="h-8 flex items-center gap-1 text-[11px] text-slate-400 cursor-pointer whitespace-nowrap">
@@ -312,7 +324,7 @@
           All day
         </label>
 
-        <button id="qa-submit" class="h-8 leading-none text-xs px-3 rounded-lg bg-emerald-400/15 border border-emerald-300/30 text-emerald-300 font-semibold hover:bg-emerald-400/25 transition-all whitespace-nowrap">Create event</button>
+        <button id="qa-submit" class="h-8 leading-8 text-xs px-3 rounded-lg bg-emerald-400/15 border border-emerald-300/30 text-emerald-300 font-semibold hover:bg-emerald-400/25 transition-all whitespace-nowrap">Create event</button>
       </div>
       <div id="qa-status" class="text-[11px] mt-1 min-h-[10px]"></div>
     </div>
@@ -385,7 +397,7 @@
     </div>
   </section>
 
-  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v25</footer>
+  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v29</footer>
 
 </div>
 
@@ -861,7 +873,8 @@ async function refreshAll(){
   else { statusText = `Partially updated at ${stamp} (${results.length - failed.length}/${results.length} sources)`; shortText = `Partial ${stamp}`; dotColor = 'bg-amber-400'; }
   bubble.title = statusText;
   label.textContent = shortText;
-  dot.className = `absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full transition-colors duration-300 ${dotColor}`;
+  fitExpandPill(bubble, shortText);
+  dot.className = `absolute top-0.5 right-0.5 w-2.5 h-2.5 rounded-full transition-colors duration-300 pointer-events-none ${dotColor}`;
 }
 document.getElementById('refresh-btn').addEventListener('click', refreshAll);
 
@@ -870,7 +883,9 @@ function applyTheme(theme){
   document.documentElement.setAttribute('data-theme', theme);
   document.getElementById('theme-icon-dark').classList.toggle('hidden', theme === 'light');
   document.getElementById('theme-icon-light').classList.toggle('hidden', theme !== 'light');
-  document.getElementById('theme-toggle-label').textContent = theme === 'light' ? 'Light mode' : 'Dark mode';
+  const label = theme === 'light' ? 'Light mode' : 'Dark mode';
+  document.getElementById('theme-toggle-label').textContent = label;
+  fitExpandPill(document.getElementById('theme-toggle'), label);
 }
 function loadTheme(){
   let theme = 'dark';
@@ -1014,7 +1029,26 @@ document.getElementById('qa-submit').addEventListener('click', async () => {
   }
 });
 
+// ================== EXPAND-PILL WIDTH FITTING ==================
+// Measures each pill's actual label text (via a scratch canvas — no layout
+// flicker, no DOM measurement tricks) and sets --expand-width to exactly
+// icon + text + padding, so hovering only ever expands as far as that
+// specific button's content actually needs. Must be re-run any time a
+// label's text changes (timestamps, "Dark mode"/"Light mode", etc.).
+const _measureCanvas = document.createElement('canvas');
+const _measureCtx = _measureCanvas.getContext('2d');
+function fitExpandPill(el, text){
+  _measureCtx.font = '400 12px -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Inter, sans-serif';
+  const textWidth = _measureCtx.measureText(text).width;
+  const iconWidth = 42;       // matches .expand-pill .icon{width:42px}
+  const labelPadRight = 16;   // matches .expand-pill .label{padding-right:16px}
+  const safetyBuffer = 4;     // small cushion for font-rendering rounding, not enough to read as "dead space"
+  const total = Math.ceil(iconWidth + textWidth + labelPadRight + safetyBuffer);
+  el.style.setProperty('--expand-width', total + 'px');
+}
+
 // ================== INIT ==================
+fitExpandPill(document.getElementById('refresh-btn'), 'Refresh'); // static label, only needs setting once
 loadTheme();
 loadNotes();
 loadLaunchers();
