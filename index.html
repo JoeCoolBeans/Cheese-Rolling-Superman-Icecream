@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<!-- DailyDashboard v19 — bump this (and the matching footer text) by 1 on every future update -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%234fd9c7' d='M12 0 C13 8 16 11 24 12 C16 13 13 16 12 24 C11 16 8 13 0 12 C8 11 11 8 12 0 Z'/%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#020308">
+<title>Daily Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,sans-serif;
+    background:
+      radial-gradient(1200px 700px at 6% -8%, rgba(139,124,246,0.18), transparent 58%),
+      radial-gradient(1000px 640px at 105% 4%, rgba(45,212,200,0.15), transparent 55%),
+      radial-gradient(900px 680px at 92% 78%, rgba(244,114,160,0.12), transparent 55%),
+      radial-gradient(800px 600px at 8% 88%, rgba(247,185,85,0.10), transparent 55%),
+      radial-gradient(700px 500px at 50% 45%, rgba(10,132,255,0.08), transparent 60%),
+      linear-gradient(180deg, #020308 0%, #060810 100%);
+    background-attachment:fixed;
+  }
+  .orb{position:fixed;border-radius:50%;filter:blur(85px);pointer-events:none;z-index:0;}
+  .orb1{width:460px;height:460px;background:#8b7cf6;opacity:.28;top:-160px;left:-130px;animation:drift1 24s ease-in-out infinite;}
+  .orb2{width:420px;height:420px;background:#2dd4c8;opacity:.24;bottom:-170px;right:-110px;animation:drift2 27s ease-in-out infinite;}
+  .orb3{width:340px;height:340px;background:#f472a0;opacity:.18;top:55%;right:8%;animation:drift3 31s ease-in-out infinite;}
+  .orb4{width:300px;height:300px;background:#f7b955;opacity:.16;bottom:10%;left:6%;animation:drift2 29s ease-in-out infinite reverse;}
+  @keyframes drift1{0%,100%{transform:translate(0,0);}50%{transform:translate(50px,65px);}}
+  @keyframes drift2{0%,100%{transform:translate(0,0);}50%{transform:translate(-55px,-35px);}}
+  @keyframes drift3{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(-35px,45px) scale(1.1);}}
+
+  .glass{
+    background:rgba(255,255,255,0.045);
+    backdrop-filter:blur(24px) saturate(170%);
+    -webkit-backdrop-filter:blur(24px) saturate(170%);
+    border:1px solid rgba(255,255,255,0.12);
+    box-shadow:0 1px 0 rgba(255,255,255,0.08) inset, 0 18px 40px rgba(0,0,0,0.4);
+    position:relative;
+    transition:transform .4s cubic-bezier(.22,1,.36,1), box-shadow .4s ease, border-color .4s ease, backdrop-filter .4s ease, background .4s ease;
+    isolation:isolate;
+  }
+  .glass::before{
+    content:"";position:absolute;inset:0;border-radius:inherit;
+    background:linear-gradient(135deg, rgba(255,255,255,0.11), rgba(255,255,255,0) 45%);
+    pointer-events:none;z-index:0;
+  }
+  .glass > *{position:relative;z-index:1;}
+  .glass-hover:hover{
+    transform:translateY(-8px) scale(1.015);
+    border-color:rgba(255,255,255,0.32);
+    background:rgba(255,255,255,0.075);
+    backdrop-filter:blur(34px) saturate(190%);
+    -webkit-backdrop-filter:blur(34px) saturate(190%);
+    box-shadow:0 1px 0 rgba(255,255,255,0.18) inset, 0 30px 60px rgba(0,0,0,0.5);
+  }
+  @keyframes spin{ from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+  .spinning{ animation:spin 0.9s linear infinite; }
+  .ring-progress{ transition:stroke-dashoffset 1s cubic-bezier(.22,1,.36,1); }
+  ::-webkit-scrollbar{ width:6px; height:6px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+  ::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.15); border-radius:6px; }
+  ::-webkit-scrollbar-thumb:hover{ background:rgba(255,255,255,0.25); }
+  html::-webkit-scrollbar-track, body::-webkit-scrollbar-track{ background:#060810; }
+  html{ color-scheme: dark; background:#020308; }
+  *{ scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent; }
+  html, body{ scrollbar-color: rgba(255,255,255,0.15) #060810; }
+  .daytab{ transition:all .2s ease; }
+  .daytab.active{ background:rgba(255,255,255,0.09); border-color:rgba(255,255,255,0.3); color:#f1f4fb; }
+
+  /* Date/time inputs: use the browser's built-in dark theme for the native
+     picker popup (calendar grid / time wheel) — CSS can't restyle that popup
+     directly, but color-scheme tells the browser to render its own dark
+     variant instead of the default bright white one. */
+  input[type="date"], input[type="time"]{
+    color-scheme: dark;
+    cursor: pointer;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator{
+    filter: invert(0.7);
+    cursor: pointer;
+    opacity: 0.8;
+    transition: opacity .15s ease;
+  }
+  input[type="date"]:hover::-webkit-calendar-picker-indicator,
+  input[type="time"]:hover::-webkit-calendar-picker-indicator{
+    opacity: 1;
+  }
+</style>
+</head>
+<body class="min-h-screen text-slate-100 p-3 md:p-5 relative overflow-x-hidden">
+
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+<div class="orb orb4"></div>
+
+<div class="max-w-6xl mx-auto space-y-4 relative z-10">
+
+  <!-- Refresh button -->
+  <button id="refresh-btn"
+    class="fixed top-5 right-5 z-50 w-11 h-11 rounded-full glass flex items-center justify-center transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
+    title="Refresh live data">
+    <svg id="refresh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-slate-300">
+      <polyline points="23 4 23 10 17 10"></polyline>
+      <polyline points="1 20 1 14 7 14"></polyline>
+      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+    </svg>
+  </button>
+
+  <!-- Last updated bubble (same size as refresh button, sits directly below it) -->
+  <div id="last-updated-bubble"
+    class="fixed top-[76px] right-5 z-50 w-11 h-11 rounded-full glass flex items-center justify-center shadow-lg"
+    title="Not yet refreshed">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-slate-400">
+      <circle cx="12" cy="12" r="9"></circle>
+      <polyline points="12 7 12 12 15 14"></polyline>
+    </svg>
+    <span id="last-updated-dot" class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-slate-500 transition-colors duration-300"></span>
+  </div>
+
+  <!-- Header: greeting + date + weather (left) / quick stats (right) -->
+  <header class="glass glass-hover rounded-3xl p-4 md:p-5 flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <h1 id="greeting-text" class="text-lg md:text-xl font-semibold tracking-tight">Good day</h1>
+      <p class="text-slate-400 text-xs mt-1 flex items-center gap-2">
+        <span id="time-text">--:--</span>
+        <span class="text-slate-600">|</span>
+        <span id="weekday-text">–</span>
+        <span class="text-slate-600">|</span>
+        <span id="monthday-text">–</span>
+      </p>
+      <div class="flex items-center gap-2 mt-1 text-xs">
+        <span id="weather-emoji" class="text-base">🌡️</span>
+        <span id="weather-temp" class="font-semibold">--°</span>
+        <span class="text-slate-600">·</span>
+        <span id="weather-cond" class="text-slate-400 text-[11px]">Fetching weather…</span>
+        <span class="text-slate-600">·</span>
+        <span id="weather-city" class="text-slate-500 text-[11px]">Loading location…</span>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap md:flex-col gap-1.5 md:items-end">
+      <span id="stat-events" class="text-[11px] text-slate-400 glass rounded-full px-3 py-1 whitespace-nowrap">– events today</span>
+      <span id="stat-tasks" class="text-[11px] text-slate-400 glass rounded-full px-3 py-1 whitespace-nowrap">– tasks open</span>
+      <span id="stat-unread" class="text-[11px] text-slate-400 glass rounded-full px-3 py-1 whitespace-nowrap">– unread</span>
+    </div>
+  </header>
+
+  <!-- Schedule -->
+  <section>
+    <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-3 ml-1">Schedule</h2>
+    <div class="flex gap-2 mb-4">
+      <button class="daytab active px-4 py-2 rounded-full text-sm font-medium glass" data-day="today">Today</button>
+      <button class="daytab px-4 py-2 rounded-full text-sm font-medium glass" data-day="tomorrow">Tomorrow</button>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="schedule-grid"></div>
+  </section>
+
+  <!-- Quick add event -->
+  <section>
+    <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-2 ml-1">Quick add event</h2>
+    <div class="glass glass-hover rounded-3xl p-3">
+      <div class="flex flex-wrap gap-2 items-center">
+        <input id="qa-title" type="text" maxlength="140" placeholder="Event title"
+          class="h-8 flex-1 min-w-[140px] bg-white/5 border border-white/10 rounded-lg px-3 text-xs text-slate-200 outline-none focus:border-white/30">
+
+        <input id="qa-date" type="date"
+          class="h-8 bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
+
+        <div id="qa-time-fields" class="flex items-center gap-1">
+          <input id="qa-start" type="time" class="h-8 w-[92px] bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
+          <span class="text-slate-600 text-xs">–</span>
+          <input id="qa-end" type="time" class="h-8 w-[92px] bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
+        </div>
+
+        <label class="h-8 flex items-center gap-1 text-[11px] text-slate-400 cursor-pointer whitespace-nowrap">
+          <input id="qa-allday" type="checkbox" class="rounded border-white/20 bg-white/5 w-3.5 h-3.5">
+          All day
+        </label>
+
+        <button id="qa-submit" class="h-8 text-xs px-3 rounded-lg bg-emerald-400/15 border border-emerald-300/30 text-emerald-300 font-semibold hover:bg-emerald-400/25 transition-all whitespace-nowrap">Create event</button>
+      </div>
+      <div id="qa-status" class="text-[11px] mt-1.5 min-h-[14px]"></div>
+    </div>
+  </section>
+
+  <!-- Priority action items / Recent Drive files / Scratchpad -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <section class="flex flex-col">
+      <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-3 ml-1">Priority action items</h2>
+      <div class="glass glass-hover rounded-3xl p-5 h-[380px] overflow-hidden">
+        <div id="priority-card" class="h-full overflow-y-auto pr-1"></div>
+      </div>
+    </section>
+
+    <section class="flex flex-col">
+      <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-3 ml-1">Countdown</h2>
+      <div class="glass glass-hover rounded-3xl p-5 h-[380px] flex flex-col overflow-hidden">
+        <input id="countdown-title" type="text" maxlength="60" placeholder="Countdown title…"
+          class="bg-transparent border-0 border-b border-white/10 focus:border-white/30 outline-none text-base font-semibold text-slate-100 placeholder-slate-600 pb-1.5 flex-shrink-0">
+
+        <div class="flex gap-2 mt-3 flex-shrink-0">
+          <input id="countdown-start" type="date" class="flex-1 bg-white/5 border border-white/10 rounded-lg px-2 h-8 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
+          <input id="countdown-end" type="date" class="flex-1 bg-white/5 border border-white/10 rounded-lg px-2 h-8 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
+        </div>
+
+        <div class="flex items-baseline gap-2 mt-3 flex-shrink-0">
+          <span id="countdown-days-left" class="text-2xl font-bold text-slate-100">–</span>
+          <span class="text-xs text-slate-500">days left</span>
+          <span id="countdown-days-completed" class="text-[11px] text-slate-500 ml-auto"></span>
+        </div>
+
+        <div id="countdown-dots" class="flex-1 min-h-0 overflow-y-auto mt-3 flex flex-wrap content-start gap-1.5 pr-1"></div>
+      </div>
+    </section>
+
+    <section class="flex flex-col">
+      <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-3 ml-1">Scratchpad</h2>
+      <div class="glass glass-hover rounded-3xl p-5 h-[380px] flex flex-col">
+        <div class="flex justify-between items-center mb-2 flex-shrink-0">
+          <span class="text-[11px] text-slate-500">Autosaves as you type</span>
+          <span id="save-indicator" class="text-[11px] text-slate-500 flex items-center gap-1.5 transition-opacity duration-300">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>Saved
+          </span>
+        </div>
+        <div class="flex gap-1.5 mb-2 flex-shrink-0">
+          <button type="button" id="scratchpad-bullet" title="Insert bullet"
+            class="text-xs px-2.5 py-1 rounded-md bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/25 text-slate-300 transition-all">• Bullet</button>
+          <button type="button" id="scratchpad-check" title="Insert checkbox"
+            class="text-xs px-2.5 py-1 rounded-md bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/25 text-slate-300 transition-all">☐ Check</button>
+        </div>
+        <textarea id="scratchpad"
+          class="w-full bg-white/5 border border-white/10 rounded-2xl p-3 text-xs text-slate-200 outline-none focus:border-white/25 resize-none flex-1 overflow-y-auto"
+          placeholder="Loose thoughts, phone numbers, things to remember…"></textarea>
+      </div>
+    </section>
+  </div>
+
+  <!-- Quick launch -->
+  <section>
+    <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-3 ml-1">Quick launch</h2>
+    <div class="glass glass-hover rounded-3xl p-5">
+      <div class="flex gap-2 mb-3">
+        <input id="launch-name-input" type="text" maxlength="24" placeholder="Name (e.g. Spotify)"
+          class="w-32 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-white/30">
+        <input id="launch-url-input" type="text" placeholder="URL or app:// link"
+          class="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-white/30">
+        <button id="launch-add" class="text-xs px-3 rounded-lg bg-emerald-400/15 border border-emerald-300/30 text-emerald-300 font-semibold hover:bg-emerald-400/25 transition-all flex-shrink-0">Add</button>
+      </div>
+      <div id="launch-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2"></div>
+    </div>
+  </section>
+
+  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v19</footer>
+
+</div>
+
+<script>
+// ================== CONFIGURATION ==================
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx2teidtuTplY4-2qr_HxYe81-68t_R8gHnP6QEqg8TY55cu3wtRFoAmiJT3miRm7enfw/exec";
+const DEFAULT_LAT = 40.3623, DEFAULT_LON = -80.6273; // Steubenville, OH fallback
+
+// ================== STATE ==================
+let activeDay = 'today';
+let liveEventsToday = [];
+let liveEventsTomorrow = [];
+let liveIncompleteTasks = [];
+let tomorrowDataLoaded = false;
+
+// ================== STORAGE (localStorage — this file runs in a normal browser) ==================
+function loadNotes(){
+  const ta = document.getElementById('scratchpad');
+  try{ ta.value = localStorage.getItem('dashboard-notes') || ''; }catch(e){ ta.value = ''; }
+}
+let notesSaveTimer = null;
+document.getElementById('scratchpad').addEventListener('input', () => {
+  const ind = document.getElementById('save-indicator');
+  ind.style.opacity = '0.5';
+  clearTimeout(notesSaveTimer);
+  notesSaveTimer = setTimeout(() => {
+    try{ localStorage.setItem('dashboard-notes', document.getElementById('scratchpad').value); ind.style.opacity = '1'; }
+    catch(e){ console.error(e); }
+  }, 600);
+});
+
+// Inserts a prefix (bullet or checkbox) at the cursor. If the cursor isn't
+// already at the start of a line, a newline is added first so the prefix
+// always begins its own line.
+function insertScratchpadPrefix(prefix){
+  const ta = document.getElementById('scratchpad');
+  const start = ta.selectionStart;
+  const end = ta.selectionEnd;
+  const value = ta.value;
+  const atLineStart = start === 0 || value[start - 1] === '\n';
+  const insertText = (atLineStart ? '' : '\n') + prefix;
+  ta.value = value.slice(0, start) + insertText + value.slice(end);
+  const newPos = start + insertText.length;
+  ta.selectionStart = ta.selectionEnd = newPos;
+  ta.focus();
+  ta.dispatchEvent(new Event('input')); // reuses the existing autosave listener above
+}
+document.getElementById('scratchpad-bullet').addEventListener('click', () => insertScratchpadPrefix('• '));
+document.getElementById('scratchpad-check').addEventListener('click', () => insertScratchpadPrefix('☐ '));
+
+// ================== CLOCK ==================
+function updateClock(){
+  const now = new Date();
+  let h = now.getHours(); const m = now.getMinutes().toString().padStart(2,'0');
+  const ampm = h >= 12 ? 'PM' : 'AM'; h = h % 12; if(h === 0) h = 12;
+  document.getElementById('time-text').textContent = `${h}:${m} ${ampm}`;
+  const hour = now.getHours();
+  document.getElementById('greeting-text').textContent =
+    hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('weekday-text').textContent = now.toLocaleDateString('en-US', {weekday:'long'});
+  document.getElementById('monthday-text').textContent = now.toLocaleDateString('en-US', {month:'long', day:'numeric'});
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ================== SCHEDULE: Tasks / Classes & Work / Personal ==================
+const columnMeta = {
+  tasks: {label:'Tasks', icon:'⏰', color:'#f7b955', dim:'rgba(247,185,85,0.16)'},
+  work: {label:'Classes & work', icon:'🎬', color:'#4fd9c7', dim:'rgba(79,217,199,0.16)'},
+  personal: {label:'Personal', icon:'✨', color:'#93a3c9', dim:'rgba(147,163,201,0.14)'}
+};
+
+function buildColShell(key){
+  const meta = columnMeta[key];
+  const col = document.createElement('div');
+  col.className = 'glass glass-hover rounded-3xl p-4 h-[380px] flex flex-col';
+  col.innerHTML = `<div class="flex items-center gap-2.5 mb-3 flex-shrink-0">
+      <div class="w-6 h-6 rounded-lg flex items-center justify-center text-xs" style="background:${meta.dim};color:${meta.color};">${meta.icon}</div>
+      <div class="text-sm font-semibold">${meta.label}</div>
+      <div class="ml-auto text-xs text-slate-500" id="count-${key}"></div>
+    </div>
+    <div class="space-y-2.5 overflow-y-auto pr-1 flex-1" id="body-${key}"></div>`;
+  return col;
+}
+
+function eventItemHtml(time, title, sub){
+  return `<div class="bg-white/[0.035] border border-white/5 rounded-xl px-3 py-2.5">
+      <div class="text-[10.5px] text-slate-500 tabular-nums">${time}</div>
+      <div class="text-[12.5px] text-slate-200 font-medium mt-0.5">${title}</div>
+      ${sub ? `<div class="text-[11px] text-slate-400 mt-0.5">${sub}</div>` : ''}
+    </div>`;
+}
+
+function emptyStateHtml(icon, title, sub){
+  return `<div class="text-center py-6 px-2">
+      <div class="text-lg opacity-50 mb-1.5">${icon}</div>
+      <div class="text-xs text-slate-400 font-medium">${title}</div>
+      <div class="text-[11px] text-slate-500 mt-1 leading-relaxed">${sub}</div>
+    </div>`;
+}
+
+function renderTasksColumn(){
+  const body = document.getElementById('body-tasks');
+  const count = document.getElementById('count-tasks');
+  if(!body) return;
+  const list = liveIncompleteTasks || [];
+  count.textContent = list.length || '';
+  if(list.length === 0){
+    body.innerHTML = emptyStateHtml('✅', 'All caught up', 'No incomplete tasks found.');
+    return;
+  }
+  body.innerHTML = list.map(t => eventItemHtml(t.date || '', t.title, t.sub || '')).join('');
+}
+
+function parseTimeToMinutes(str){
+  if(!str) return null;
+  const match = str.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if(!match) return null;
+  let h = parseInt(match[1], 10);
+  const m = parseInt(match[2], 10);
+  const ampm = match[3].toUpperCase();
+  if(ampm === 'PM' && h !== 12) h += 12;
+  if(ampm === 'AM' && h === 12) h = 0;
+  return h * 60 + m;
+}
+
+function renderDayColumn(key, day){
+  const meta = columnMeta[key];
+  const body = document.getElementById('body-' + key);
+  const count = document.getElementById('count-' + key);
+  if(!body) return;
+
+  let events = [];
+  if(day === 'today'){
+    events = liveEventsToday.filter(e => e.category === key);
+  } else {
+    events = liveEventsTomorrow.filter(e => e.category === key);
+  }
+
+  // Personal column: drop events that have already ended today, and sort
+  // so all-day events stay pinned at top, then soonest-upcoming first.
+  if(key === 'personal'){
+    if(day === 'today'){
+      const now = new Date();
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      events = events.filter(ev => {
+        if(ev.isAllDay) return true;
+        const endMinutes = parseTimeToMinutes(ev.endTime) ?? parseTimeToMinutes(ev.startTime);
+        return endMinutes === null || endMinutes >= nowMinutes;
+      });
+    }
+    events = events.slice().sort((a, b) => {
+      if(a.isAllDay && !b.isAllDay) return -1;
+      if(!a.isAllDay && b.isAllDay) return 1;
+      if(a.isAllDay && b.isAllDay) return 0;
+      const aStart = parseTimeToMinutes(a.startTime) ?? 9999;
+      const bStart = parseTimeToMinutes(b.startTime) ?? 9999;
+      return aStart - bStart;
+    });
+  }
+
+  count.textContent = events.length ? events.length : '';
+  if(events.length === 0){
+    let sub;
+    if(day === 'tomorrow' && !tomorrowDataLoaded){
+      sub = "Waiting on your Apps Script to include eventsTomorrow — hit refresh once it's redeployed.";
+    } else if(key === 'personal' && day === 'today'){
+      sub = "Nothing left today — everything's either done or it's an all-day event already shown elsewhere.";
+    } else {
+      sub = `No ${key === 'work' ? 'classes or AV shifts' : 'other events'} on the calendar for ${day}.`;
+    }
+    body.innerHTML = emptyStateHtml(key === 'work' ? '🎬' : '☁️', 'Nothing here', sub);
+  } else {
+    body.innerHTML = events.map(ev => eventItemHtml(ev.time || '', ev.title, ev.sub || '')).join('');
+  }
+}
+
+function initScheduleShell(){
+  const grid = document.getElementById('schedule-grid');
+  grid.innerHTML = '';
+  ['tasks','work','personal'].forEach(key => grid.appendChild(buildColShell(key)));
+  renderTasksColumn();
+  renderDayColumn('work', activeDay);
+  renderDayColumn('personal', activeDay);
+}
+initScheduleShell();
+
+document.querySelectorAll('.daytab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.daytab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    activeDay = tab.dataset.day;
+    renderDayColumn('work', activeDay);
+    renderDayColumn('personal', activeDay);
+  });
+});
+
+// ================== COUNTDOWN (fully client-side — no Apps Script needed) ==================
+function isoToUtcMs(iso){
+  const [y, m, d] = iso.split('-').map(Number);
+  return Date.UTC(y, m - 1, d);
+}
+function daysBetween(isoA, isoB){
+  return Math.round((isoToUtcMs(isoB) - isoToUtcMs(isoA)) / 86400000);
+}
+function localIso(d){
+  const yyyy = d.getFullYear(), mm = String(d.getMonth() + 1).padStart(2, '0'), dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+// Finds the largest dot size (and matching gap) that lets all `count` dots
+// fit inside the container's actual current width/height without wrapping
+// into more rows than fit — so the grid scales down automatically for long
+// countdowns instead of requiring a scroll. Falls back to the smallest size
+// (and lets the container's own overflow-y-auto kick in as a safety net)
+// for extreme ranges where even that can't fit everything.
+function sizeDotsToFit(container, count){
+  const W = container.clientWidth;
+  const H = container.clientHeight;
+  const maxSize = 10, minSize = 2;
+
+  if(!W || !H || count <= 0) return { size: maxSize, gap: 6 };
+
+  for(let size = maxSize; size >= minSize; size -= 0.25){
+    const gap = Math.max(1.5, Math.min(6, size * 0.5));
+    const perRow = Math.max(1, Math.floor((W + gap) / (size + gap)));
+    const rows = Math.ceil(count / perRow);
+    const neededHeight = rows * (size + gap) - gap;
+    if(neededHeight <= H){
+      return { size, gap };
+    }
+  }
+  return { size: minSize, gap: 1.5 };
+}
+
+function renderCountdown(){
+  const startVal = document.getElementById('countdown-start').value;
+  const endVal = document.getElementById('countdown-end').value;
+  const dotsEl = document.getElementById('countdown-dots');
+  const leftEl = document.getElementById('countdown-days-left');
+  const doneEl = document.getElementById('countdown-days-completed');
+
+  if(!startVal || !endVal){
+    dotsEl.innerHTML = `<div class="text-center text-slate-500 text-xs py-4 w-full">Set a start and end date to begin.</div>`;
+    leftEl.textContent = '–';
+    doneEl.textContent = '';
+    return;
+  }
+
+  const totalDays = daysBetween(startVal, endVal) + 1; // inclusive of both start and end dates
+  if(totalDays <= 0){
+    dotsEl.innerHTML = `<div class="text-center text-rose-400 text-xs py-4 w-full">End date must be after start date.</div>`;
+    leftEl.textContent = '–';
+    doneEl.textContent = '';
+    return;
+  }
+
+  const todayIso = localIso(new Date());
+  let elapsed = daysBetween(startVal, todayIso); // days strictly before today = "completed"
+  elapsed = Math.max(0, Math.min(elapsed, totalDays));
+  const daysLeft = totalDays - elapsed;
+
+  leftEl.textContent = daysLeft;
+  doneEl.textContent = `${elapsed} day${elapsed === 1 ? '' : 's'} completed`;
+
+  const { size, gap } = sizeDotsToFit(dotsEl, totalDays);
+  dotsEl.style.gap = gap + 'px';
+
+  let dotsHtml = '';
+  for(let i = 0; i < totalDays; i++){
+    const filled = i < elapsed;
+    dotsHtml += `<span style="width:${size}px;height:${size}px;" class="rounded-full flex-shrink-0 ${filled ? 'bg-emerald-400' : 'bg-white/10 border border-white/20'}"></span>`;
+  }
+  dotsEl.innerHTML = dotsHtml;
+}
+
+function loadCountdown(){
+  try{
+    const raw = localStorage.getItem('dashboard-countdown');
+    const saved = raw ? JSON.parse(raw) : null;
+    if(saved){
+      document.getElementById('countdown-title').value = saved.title || '';
+      document.getElementById('countdown-start').value = saved.start || '';
+      document.getElementById('countdown-end').value = saved.end || '';
+    }
+  }catch(e){}
+  renderCountdown();
+}
+function saveCountdown(){
+  try{
+    localStorage.setItem('dashboard-countdown', JSON.stringify({
+      title: document.getElementById('countdown-title').value,
+      start: document.getElementById('countdown-start').value,
+      end: document.getElementById('countdown-end').value
+    }));
+  }catch(e){}
+}
+
+document.getElementById('countdown-title').addEventListener('input', saveCountdown);
+['countdown-start', 'countdown-end'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('click', () => {
+    if(typeof el.showPicker === 'function'){
+      try{ el.showPicker(); }catch(e){}
+    }
+  });
+  el.addEventListener('change', () => { saveCountdown(); renderCountdown(); });
+});
+
+// ================== UTILITIES ==================
+function escapeHTML(str){
+  return String(str).replace(/[&<>'"]/g, tag => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[tag] || tag));
+}
+
+// ================== PRIORITY ITEMS (live — pulled from Gmail via your Apps Script) ==================
+function renderPriorityItems(emails){
+  const card = document.getElementById('priority-card');
+  if(!Array.isArray(emails) || emails.length === 0){
+    card.innerHTML = `<div class="text-center text-slate-500 text-xs py-4">Inbox zero — no unread email right now.</div>`;
+    return;
+  }
+  card.innerHTML = emails.map((p, i) => `
+    <div class="${i > 0 ? 'border-t border-white/5 pt-2.5 mt-2.5' : ''}">
+      <span class="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-rose-400/15 text-rose-300">Email</span>
+      <div class="text-[13px] font-semibold text-slate-100 mt-1.5 leading-snug">${escapeHTML(p.subject)}</div>
+      <div class="text-[11.5px] text-slate-400 mt-0.5 leading-relaxed">From ${escapeHTML(p.from)} · ${escapeHTML(p.date)}</div>
+      ${p.snippet ? `<div class="text-[11px] text-slate-500 mt-1 leading-relaxed italic">"${escapeHTML(p.snippet)}…"</div>` : ''}
+    </div>`).join('');
+}
+document.getElementById('priority-card').innerHTML = `<div class="text-center text-slate-500 text-xs py-4">Loading unread email…</div>`;
+
+// ================== GOOGLE CALENDAR & TASKS ==================
+async function fetchGoogleData(){
+  if(!GOOGLE_SCRIPT_URL) return;
+  const response = await fetch(GOOGLE_SCRIPT_URL);
+  if(!response.ok) throw new Error('Apps Script request failed: ' + response.status);
+  const data = await response.json();
+
+  liveEventsToday = Array.isArray(data.eventsToday) ? data.eventsToday.map(ev => ({
+    time: ev.isAllDay ? 'All day' : `${ev.startTime || ''}${ev.endTime ? ' – ' + ev.endTime : ''}`,
+    title: ev.title || 'Untitled event',
+    isAllDay: !!ev.isAllDay,
+    startTime: ev.startTime || '',
+    endTime: ev.endTime || '',
+    category: ev.category === 'work' ? 'work' : 'personal'
+  })) : [];
+
+  if(Array.isArray(data.eventsTomorrow)){
+    tomorrowDataLoaded = true;
+    liveEventsTomorrow = data.eventsTomorrow.map(ev => ({
+      time: ev.isAllDay ? 'All day' : `${ev.startTime || ''}${ev.endTime ? ' – ' + ev.endTime : ''}`,
+      title: ev.title || 'Untitled event',
+      isAllDay: !!ev.isAllDay,
+      startTime: ev.startTime || '',
+      endTime: ev.endTime || '',
+      category: ev.category === 'work' ? 'work' : 'personal'
+    }));
+  } else {
+    tomorrowDataLoaded = false;
+    liveEventsTomorrow = [];
+  }
+
+  liveIncompleteTasks = Array.isArray(data.incompleteTasks) ? data.incompleteTasks.map(t => {
+    let dateLabel = '';
+    if(t.due){
+      const d = new Date(t.due);
+      dateLabel = isNaN(d) ? String(t.due) : d.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+    }
+    return { date: dateLabel, title: t.title || 'Untitled task', sub: t.notes || '' };
+  }) : [];
+
+  renderPriorityItems(Array.isArray(data.priorityEmails) ? data.priorityEmails : []);
+  updateHeaderStats(liveEventsToday.length, liveIncompleteTasks.length, Array.isArray(data.priorityEmails) ? data.priorityEmails.length : 0);
+
+  renderTasksColumn();
+  renderDayColumn('work', activeDay);
+  renderDayColumn('personal', activeDay);
+}
+
+function updateHeaderStats(eventsCount, tasksCount, unreadCount){
+  document.getElementById('stat-events').textContent = `${eventsCount} event${eventsCount === 1 ? '' : 's'} today`;
+  document.getElementById('stat-tasks').textContent = `${tasksCount} task${tasksCount === 1 ? '' : 's'} open`;
+  document.getElementById('stat-unread').textContent = `${unreadCount} unread`;
+}
+
+// ================== WEATHER (Open-Meteo) ==================
+function weatherDescription(code){
+  const map = {
+    0:'Clear sky', 1:'Mainly clear', 2:'Partly cloudy', 3:'Overcast', 45:'Foggy', 48:'Foggy',
+    51:'Light drizzle', 53:'Drizzle', 55:'Dense drizzle', 61:'Slight rain', 63:'Rain', 65:'Heavy rain',
+    71:'Slight snow', 73:'Snow', 75:'Heavy snow', 80:'Rain showers', 81:'Rain showers', 82:'Violent showers',
+    95:'Thunderstorm', 96:'Thunderstorm', 99:'Severe thunderstorm'
+  };
+  return map[code] || 'Fair';
+}
+function weatherEmoji(code){
+  if(code === 0) return '☀️';
+  if(code === 1 || code === 2) return '⛅';
+  if(code === 3 || code === 45 || code === 48) return '☁️';
+  if([51,53,55,61,63,65,80,81,82].includes(code)) return '🌧️';
+  if([71,73,75].includes(code)) return '🌨️';
+  if([95,96,99].includes(code)) return '⛈️';
+  return '🌡️';
+}
+async function fetchWeatherData(){
+  // Geolocation removed on purpose — it re-prompted for permission on every
+  // load when run as a local file. Using the fixed default location instead.
+  const lat = DEFAULT_LAT, lon = DEFAULT_LON, locLabel = 'Steubenville, OH';
+  document.getElementById('weather-city').textContent = locLabel;
+
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&timezone=auto`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('Weather request failed: ' + res.status);
+  const data = await res.json();
+  const temp = Math.round(data.current_weather.temperature);
+  const code = data.current_weather.weathercode;
+  const high = Math.round(data.daily.temperature_2m_max[0]);
+  const low = Math.round(data.daily.temperature_2m_min[0]);
+  document.getElementById('weather-emoji').textContent = weatherEmoji(code);
+  document.getElementById('weather-temp').textContent = `${temp}°`;
+  document.getElementById('weather-cond').textContent = `${weatherDescription(code)} · High ${high}° Low ${low}°`;
+}
+
+// ================== REFRESH ENGINE ==================
+async function refreshAll(){
+  const btn = document.getElementById('refresh-btn');
+  const icon = document.getElementById('refresh-icon');
+  icon.classList.add('spinning'); btn.disabled = true;
+
+  const results = await Promise.allSettled([fetchGoogleData(), fetchWeatherData()]);
+  const failed = results.filter(r => r.status === 'rejected');
+  failed.forEach(f => console.error('Refresh error:', f.reason));
+
+  icon.classList.remove('spinning'); btn.disabled = false;
+
+  const now = new Date();
+  let h = now.getHours(); const m = now.getMinutes().toString().padStart(2,'0');
+  const ampm = h >= 12 ? 'PM' : 'AM'; h = h % 12; if(h === 0) h = 12;
+  const stamp = `${h}:${m} ${ampm}`;
+  const bubble = document.getElementById('last-updated-bubble');
+  const dot = document.getElementById('last-updated-dot');
+  let statusText, dotColor;
+  if(failed.length === 0){ statusText = `Last updated at ${stamp}`; dotColor = 'bg-emerald-400'; }
+  else if(failed.length === results.length){ statusText = `Refresh failed at ${stamp} — try again`; dotColor = 'bg-rose-400'; }
+  else { statusText = `Partially updated at ${stamp} (${results.length - failed.length}/${results.length} sources)`; dotColor = 'bg-amber-400'; }
+  bubble.title = statusText;
+  dot.className = `absolute top-1.5 right-1.5 w-2 h-2 rounded-full transition-colors duration-300 ${dotColor}`;
+}
+document.getElementById('refresh-btn').addEventListener('click', refreshAll);
+
+// ================== QUICK LAUNCH ==================
+const defaultLaunchers = [
+  {id:'l1', name:'Gmail', url:'https://mail.google.com'},
+  {id:'l2', name:'Calendar', url:'https://calendar.google.com'},
+  {id:'l3', name:'Drive', url:'https://drive.google.com'},
+  {id:'l4', name:'YouTube Music', url:'https://music.youtube.com'}
+];
+let launchers = [];
+function loadLaunchers(){
+  try{ const raw = localStorage.getItem('dashboard-launchers'); launchers = raw ? JSON.parse(raw) : defaultLaunchers; }
+  catch(e){ launchers = defaultLaunchers; }
+  renderLaunchers();
+}
+function saveLaunchers(){ try{ localStorage.setItem('dashboard-launchers', JSON.stringify(launchers)); }catch(e){ console.error(e); } }
+function renderLaunchers(){
+  const grid = document.getElementById('launch-grid');
+  if(launchers.length === 0){
+    grid.innerHTML = '<div class="col-span-full text-center text-slate-500 text-xs py-4">No shortcuts yet — add one above.</div>';
+    return;
+  }
+  grid.innerHTML = launchers.map(l => `
+    <div class="relative group">
+      <a href="${l.url}" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center text-center px-3 py-3 rounded-xl bg-white/5 border border-white/10 hover:border-white/30 hover:bg-white/10 transition-all text-xs font-medium text-slate-200 truncate" title="${l.url}">
+        ${escapeHTML(l.name)}
+      </a>
+      <button class="launch-del absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-800 border border-white/20 text-slate-400 opacity-0 group-hover:opacity-100 hover:text-rose-300 transition-all flex items-center justify-center text-[10px] leading-none" data-id="${l.id}">✕</button>
+    </div>`).join('');
+
+  grid.querySelectorAll('.launch-del').forEach(btn => btn.addEventListener('click', () => {
+    launchers = launchers.filter(l => l.id !== btn.dataset.id);
+    renderLaunchers(); saveLaunchers();
+  }));
+}
+document.getElementById('launch-add').addEventListener('click', () => {
+  const nameInput = document.getElementById('launch-name-input');
+  const urlInput = document.getElementById('launch-url-input');
+  const name = nameInput.value.trim();
+  const url = urlInput.value.trim();
+  if(!name || !url) return;
+  launchers.push({id:'l'+Date.now(), name, url});
+  nameInput.value = ''; urlInput.value = '';
+  renderLaunchers(); saveLaunchers();
+});
+
+// ================== QUICK ADD EVENT ==================
+function initQuickAddDefaults(){
+  const dateInput = document.getElementById('qa-date');
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  dateInput.value = `${yyyy}-${mm}-${dd}`;
+}
+
+// Clicking anywhere in a date/time box opens its native picker, not just
+// the small icon. showPicker() is supported in current Chrome/Edge; browsers
+// without it just fall back to normal click-to-focus behavior.
+['qa-date', 'qa-start', 'qa-end'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('click', () => {
+    if(typeof el.showPicker === 'function'){
+      try{ el.showPicker(); }catch(e){ /* ignore — e.g. picker already open */ }
+    }
+  });
+});
+
+document.getElementById('qa-allday').addEventListener('change', (e) => {
+  document.getElementById('qa-time-fields').classList.toggle('hidden', e.target.checked);
+});
+
+document.getElementById('qa-submit').addEventListener('click', async () => {
+  const statusEl = document.getElementById('qa-status');
+  const btn = document.getElementById('qa-submit');
+  const title = document.getElementById('qa-title').value.trim();
+  const date = document.getElementById('qa-date').value;
+  const isAllDay = document.getElementById('qa-allday').checked;
+  const startTime = document.getElementById('qa-start').value;
+  const endTime = document.getElementById('qa-end').value;
+
+  if(!title || !date){
+    statusEl.textContent = 'Title and date are required.';
+    statusEl.className = 'text-[11px] mt-2.5 min-h-[16px] text-rose-400';
+    return;
+  }
+  if(!isAllDay && (!startTime || !endTime)){
+    statusEl.textContent = 'Start and end time are required for a timed event.';
+    statusEl.className = 'text-[11px] mt-2.5 min-h-[16px] text-rose-400';
+    return;
+  }
+
+  const payload = {
+    action: 'createEvent',
+    title: title,
+    isAllDay: isAllDay,
+    start: isAllDay ? `${date}T00:00:00` : `${date}T${startTime}:00`,
+    end: isAllDay ? `${date}T00:00:00` : `${date}T${endTime}:00`
+  };
+
+  btn.disabled = true;
+  btn.textContent = 'Creating…';
+  statusEl.textContent = '';
+
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids a CORS preflight against Apps Script
+      body: JSON.stringify(payload)
+    });
+    const result = await res.json();
+    if(result.success){
+      statusEl.textContent = `"${title}" created.`;
+      statusEl.className = 'text-[11px] mt-2.5 min-h-[16px] text-emerald-400';
+      document.getElementById('qa-title').value = '';
+      document.getElementById('qa-start').value = '';
+      document.getElementById('qa-end').value = '';
+      refreshAll();
+    } else {
+      statusEl.textContent = `Failed: ${result.error || 'unknown error'}`;
+      statusEl.className = 'text-[11px] mt-2.5 min-h-[16px] text-rose-400';
+    }
+  }catch(err){
+    statusEl.textContent = `Request failed: ${err.message}`;
+    statusEl.className = 'text-[11px] mt-2.5 min-h-[16px] text-rose-400';
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Create event';
+  }
+});
+
+// ================== INIT ==================
+loadNotes();
+loadLaunchers();
+loadCountdown();
+initQuickAddDefaults();
+refreshAll();
+setInterval(refreshAll, 15 * 60 * 1000);
+
+// Registers the service worker so the app is installable / opens full-screen
+// from the home screen. Harmless if hosted somewhere that doesn't support it.
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => console.error('Service worker registration failed:', err));
+  });
+}
+</script>
+
+</body>
+</html>
