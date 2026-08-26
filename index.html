@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DailyDashboard v19 — bump this (and the matching footer text) by 1 on every future update -->
+<!-- DailyDashboard v21 — bump this (and the matching footer text) by 1 on every future update -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -8,6 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="theme-color" content="#020308">
+<meta name="robots" content="noindex, nofollow">
 <title>Daily Dashboard</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
@@ -254,13 +255,17 @@
     </div>
   </section>
 
-  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v19</footer>
+  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v21</footer>
 
 </div>
 
 <script>
 // ================== CONFIGURATION ==================
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx2teidtuTplY4-2qr_HxYe81-68t_R8gHnP6QEqg8TY55cu3wtRFoAmiJT3miRm7enfw/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwRvbBrfSGd0tXbaYy0qa-kWnT8IY_l7XuIUJcNw_vu7tkF3PqFVEvC2baWD15q_rBhpA/exec";
+// Must exactly match the DASHBOARD_KEY Script Property you set in the Apps
+// Script project (Project Settings → Script Properties). Replace this
+// placeholder with your own long random string, not this example one.
+const DASHBOARD_KEY = "GhuCABQ3Y8V8grvgJ-GcAVlwdF9U3dcH6jK54GfI9pI";
 const DEFAULT_LAT = 40.3623, DEFAULT_LON = -80.6273; // Steubenville, OH fallback
 
 // ================== STATE ==================
@@ -589,7 +594,7 @@ document.getElementById('priority-card').innerHTML = `<div class="text-center te
 // ================== GOOGLE CALENDAR & TASKS ==================
 async function fetchGoogleData(){
   if(!GOOGLE_SCRIPT_URL) return;
-  const response = await fetch(GOOGLE_SCRIPT_URL);
+  const response = await fetch(`${GOOGLE_SCRIPT_URL}?key=${encodeURIComponent(DASHBOARD_KEY)}`);
   if(!response.ok) throw new Error('Apps Script request failed: ' + response.status);
   const data = await response.json();
 
@@ -800,7 +805,8 @@ document.getElementById('qa-submit').addEventListener('click', async () => {
     title: title,
     isAllDay: isAllDay,
     start: isAllDay ? `${date}T00:00:00` : `${date}T${startTime}:00`,
-    end: isAllDay ? `${date}T00:00:00` : `${date}T${endTime}:00`
+    end: isAllDay ? `${date}T00:00:00` : `${date}T${endTime}:00`,
+    key: DASHBOARD_KEY
   };
 
   btn.disabled = true;
