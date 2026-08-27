@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- DailyDashboard v34 — bump this (and the matching footer text) by 1 on every future update -->
+<!-- DailyDashboard v37 — bump this (and the matching footer text) by 1 on every future update -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='1.44' y='1.44' width='21.12' height='21.12' rx='5.28' fill='%23020308'/%3E%3Cpath fill='%234fd9c7' d='M12,4.8 L13.12,10.88 L19.2,12 L13.12,13.12 L12,19.2 L10.88,13.12 L4.8,12 L10.88,10.88 Z'/%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='1.44' y='1.44' width='21.12' height='21.12' rx='5.28' fill='%23020308'/%3E%3Cpath fill='%234fd9c7' d='M12,2.4 L13.49,10.51 L21.6,12 L13.49,13.49 L12,21.6 L10.51,13.49 L2.4,12 L10.51,10.51 Z'/%3E%3C/svg%3E">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="theme-color" content="#020308">
@@ -19,6 +19,7 @@
     --sheen:rgba(255,255,255,0.14); --grid-line:rgba(255,255,255,0.045);
     --outer-shadow:rgba(0,0,0,0.4); --outer-shadow-hover:rgba(0,0,0,0.5);
     --icon-badge-bg:rgba(79,217,199,0.12);
+    --clock-tick:rgba(255,255,255,0.55); --clock-hand:#f1f4fb;
   }
   html[data-theme="light"]{
     color-scheme:light;
@@ -28,6 +29,7 @@
     --sheen:rgba(255,255,255,0.6); --grid-line:rgba(20,22,35,0.07);
     --outer-shadow:rgba(30,34,60,0.12); --outer-shadow-hover:rgba(30,34,60,0.18);
     --icon-badge-bg:rgba(79,217,199,0.14);
+    --clock-tick:rgba(20,22,35,0.5); --clock-hand:#14161f;
     background:#eef0f4;
   }
   body{
@@ -37,11 +39,9 @@
   }
   html:not([data-theme="light"]) body{
     background:
-      radial-gradient(1200px 700px at 6% -8%, rgba(139,124,246,0.18), transparent 58%),
-      radial-gradient(1000px 640px at 105% 4%, rgba(45,212,200,0.15), transparent 55%),
-      radial-gradient(900px 680px at 92% 78%, rgba(244,114,160,0.12), transparent 55%),
-      radial-gradient(800px 600px at 8% 88%, rgba(247,185,85,0.10), transparent 55%),
-      radial-gradient(700px 500px at 50% 45%, rgba(10,132,255,0.08), transparent 60%),
+      radial-gradient(1200px 700px at 6% -8%, rgba(139,124,246,0.12), transparent 58%),
+      radial-gradient(1000px 640px at 105% 4%, rgba(45,212,200,0.11), transparent 55%),
+      radial-gradient(700px 500px at 50% 45%, rgba(10,132,255,0.07), transparent 60%),
       linear-gradient(180deg, #020308 0%, #060810 100%);
     background-attachment:fixed;
   }
@@ -88,6 +88,11 @@
     pointer-events:none;z-index:0;
   }
   .glass > *{position:relative;z-index:1;}
+  #analog-clock{ width:60px; height:60px; flex-shrink:0; }
+  #analog-clock .tick{ stroke:var(--clock-tick); stroke-width:2.4; stroke-linecap:round; }
+  #analog-clock .hour-hand{ stroke:var(--clock-hand); stroke-width:2.8; stroke-linecap:round; }
+  #analog-clock .minute-hand{ stroke:var(--clock-hand); stroke-width:2.1; stroke-linecap:round; }
+  #analog-clock .center-dot{ fill:#ffffff; }
   /* Lightweight glass variant for small pills whose text is set directly
      via textContent (the header stat counters) — no wrapping child element
      exists for a `.glass > *` z-index rule to lift above the sheen overlay,
@@ -166,7 +171,7 @@
   /* A clear accent-colored active state instead of a near-invisible tone-
      on-tone overlay — that version wasn't distinct enough in dark mode and
      rendered inconsistently in light mode, so one rule now covers both. */
-  .daytab.active{ background:rgba(79,217,199,0.18); border-color:rgba(79,217,199,0.5); color:var(--text-primary); }
+  .daytab.active{ font-weight:700; color:var(--text-primary); }
 
   /* Date/time inputs: use the browser's built-in theme (matching light/dark
      mode) for the native picker popup — CSS can't restyle that popup
@@ -305,18 +310,16 @@
 <div class="max-w-6xl mx-auto space-y-4 relative z-10">
 
   <!-- Header: greeting + date + weather (left) / quick stats (right) -->
-  <header class="glass glass-hover rounded-3xl p-4 md:p-5 flex flex-wrap items-start justify-between gap-4">
-    <div>
+  <header id="dashboard-header" class="glass glass-hover rounded-3xl flex flex-wrap items-center justify-between gap-4" style="padding:12px 14px 12px 22px;">
+    <div id="greeting-block">
       <h1 id="greeting-text" class="text-lg md:text-xl font-semibold tracking-tight">Good day</h1>
       <p class="text-slate-400 text-xs mt-1 flex items-center gap-2">
-        <span id="time-text">--:--</span>
-        <span class="text-slate-600">|</span>
         <span id="weekday-text">–</span>
         <span class="text-slate-600">|</span>
         <span id="monthday-text">–</span>
       </p>
       <div class="flex items-center gap-2 mt-1 text-xs">
-        <span id="weather-emoji" class="text-base">🌡️</span>
+        <span id="weather-emoji" class="w-4 h-4 text-slate-400 flex-shrink-0"></span>
         <span id="weather-temp" class="font-semibold">--°</span>
         <span class="text-slate-600">·</span>
         <span id="weather-cond" class="text-slate-400 text-[11px]">Fetching weather…</span>
@@ -325,16 +328,12 @@
       </div>
     </div>
 
-    <div class="flex flex-wrap md:flex-col gap-1.5 md:items-end">
-      <span id="stat-events" class="text-[11px] text-slate-400 mini-pill rounded-full px-3 py-1 whitespace-nowrap">– events today</span>
-      <span id="stat-tasks" class="text-[11px] text-slate-400 mini-pill rounded-full px-3 py-1 whitespace-nowrap">– tasks open</span>
-      <span id="stat-unread" class="text-[11px] text-slate-400 mini-pill rounded-full px-3 py-1 whitespace-nowrap">– unread</span>
-    </div>
+    <svg id="analog-clock" class="flex-shrink-0" viewBox="0 0 100 100"></svg>
   </header>
 
   <!-- Schedule -->
   <section>
-    <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-3 ml-1">Schedule</h2>
+    <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-4 ml-1">Schedule</h2>
     <div class="flex gap-2 mb-4">
       <button class="daytab active px-4 py-2 rounded-full text-sm font-medium glass" data-day="today">Today</button>
       <button class="daytab px-4 py-2 rounded-full text-sm font-medium glass" data-day="tomorrow">Tomorrow</button>
@@ -344,7 +343,7 @@
 
   <!-- Quick add event -->
   <section>
-    <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-2 ml-1">Quick add event</h2>
+    <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-4 ml-1">Quick add event</h2>
     <div class="glass glass-hover rounded-3xl" style="padding:16px 12px;">
       <div class="flex flex-wrap gap-2 items-center">
         <input id="qa-title" type="text" maxlength="140" placeholder="Event title"
@@ -364,6 +363,12 @@
           All day
         </label>
 
+        <select id="qa-calendar" class="h-8 bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-300 outline-none focus:border-white/30 cursor-pointer">
+          <option value="Personal">Personal</option>
+          <option value="Classes">Classes</option>
+          <option value="Work">Work</option>
+        </select>
+
         <button id="qa-submit" class="h-8 leading-8 text-xs px-3 rounded-lg bg-emerald-400/15 border border-emerald-300/30 text-emerald-300 font-semibold hover:bg-emerald-400/25 transition-all whitespace-nowrap">Create event</button>
       </div>
     </div>
@@ -378,14 +383,14 @@
   <!-- Priority action items / Recent Drive files / Scratchpad -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     <section class="flex flex-col">
-      <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-3 ml-1">Priority action items</h2>
+      <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-4 ml-1">Priority action items</h2>
       <div class="glass glass-hover rounded-3xl p-5 h-[380px] overflow-hidden">
         <div id="priority-card" class="h-full overflow-y-auto pr-1"></div>
       </div>
     </section>
 
     <section class="flex flex-col">
-      <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-3 ml-1">Countdown</h2>
+      <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-4 ml-1">Countdown</h2>
       <div class="glass glass-hover rounded-3xl p-5 h-[380px] flex flex-col overflow-hidden">
         <input id="countdown-title" type="text" maxlength="60" placeholder="Countdown title…"
           class="bg-transparent border-0 border-b border-white/10 focus:border-white/30 outline-none text-base font-semibold text-slate-100 placeholder-slate-600 pb-1.5 flex-shrink-0">
@@ -406,7 +411,7 @@
     </section>
 
     <section class="flex flex-col">
-      <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-3 ml-1">Scratchpad</h2>
+      <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-4 ml-1">Scratchpad</h2>
       <div class="glass glass-hover rounded-3xl p-5 h-[380px] flex flex-col">
         <div class="flex justify-between items-center mb-2 flex-shrink-0">
           <span class="text-[11px] text-slate-500">Autosaves as you type</span>
@@ -429,7 +434,7 @@
 
   <!-- Quick launch -->
   <section>
-    <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-3 ml-1">Quick launch</h2>
+    <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-4 ml-1">Quick launch</h2>
     <div class="glass glass-hover rounded-3xl p-5">
       <div class="flex gap-2 mb-3">
         <input id="launch-name-input" type="text" maxlength="24" placeholder="Name (e.g. Spotify)"
@@ -442,13 +447,13 @@
     </div>
   </section>
 
-  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v34</footer>
+  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v37</footer>
 
 </div>
 
 <script>
 // ================== CONFIGURATION ==================
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwAX9nvzuaIjV9Dus-a3dKshPtsvrCsnmpW5iLvsYDOcJBeBKGZGYJqpgLTCqwNkYURxA/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxGRgXG2MCkzdiqsKXiW1CzstAL7ZZv_RHk2I5lRycRgpvjKaumTnzvthFQGH111xvBnQ/exec";
 // Must exactly match the DASHBOARD_KEY Script Property you set in the Apps
 // Script project (Project Settings → Script Properties). Replace this
 // placeholder with your own long random string, not this example one.
@@ -522,9 +527,6 @@ document.getElementById('scratchpad').addEventListener('keydown', (e) => {
 // ================== CLOCK ==================
 function updateClock(){
   const now = new Date();
-  let h = now.getHours(); const m = now.getMinutes().toString().padStart(2,'0');
-  const ampm = h >= 12 ? 'PM' : 'AM'; h = h % 12; if(h === 0) h = 12;
-  document.getElementById('time-text').textContent = `${h}:${m} ${ampm}`;
   const hour = now.getHours();
   document.getElementById('greeting-text').textContent =
     hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
@@ -534,11 +536,81 @@ function updateClock(){
 updateClock();
 setInterval(updateClock, 1000);
 
+// ================== ANALOG CLOCK ==================
+// Ticks/hands are built once; sizing is recalculated from the header's own
+// rendered height (minus a fixed 12px top/bottom margin) rather than a
+// fixed pixel size, so the clock always fills the available vertical space
+// consistently regardless of how tall the header ends up being — e.g. if
+// the weather line wraps to an extra line on a narrow screen.
+const clockSvg = document.getElementById('analog-clock');
+
+for(let i = 0; i < 12; i++){
+  const angle = (i * 30) * Math.PI / 180;
+  const outerR = 44, innerR = 36;
+  const x1 = 50 + outerR * Math.sin(angle), y1 = 50 - outerR * Math.cos(angle);
+  const x2 = 50 + innerR * Math.sin(angle), y2 = 50 - innerR * Math.cos(angle);
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+  line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+  line.setAttribute('class', 'tick');
+  clockSvg.appendChild(line);
+}
+const clockHourHand = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+clockHourHand.setAttribute('x1', 50); clockHourHand.setAttribute('y1', 50);
+clockHourHand.setAttribute('x2', 50); clockHourHand.setAttribute('y2', 26);
+clockHourHand.setAttribute('class', 'hour-hand');
+clockSvg.appendChild(clockHourHand);
+
+const clockMinuteHand = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+clockMinuteHand.setAttribute('x1', 50); clockMinuteHand.setAttribute('y1', 50);
+clockMinuteHand.setAttribute('x2', 50); clockMinuteHand.setAttribute('y2', 14);
+clockMinuteHand.setAttribute('class', 'minute-hand');
+clockSvg.appendChild(clockMinuteHand);
+
+const clockCenterDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+clockCenterDot.setAttribute('cx', 50); clockCenterDot.setAttribute('cy', 50); clockCenterDot.setAttribute('r', 3.2);
+clockCenterDot.setAttribute('class', 'center-dot');
+clockSvg.appendChild(clockCenterDot);
+
+function sizeAnalogClock(){
+  // Measures the LEFT content block (greeting + date + weather) specifically,
+  // not the header row as a whole — measuring the row itself would create a
+  // feedback loop, since the header's own height is partly determined by
+  // the clock (a flex sibling), which is exactly what caused it to lock in
+  // at an oversized default before this fix. The greeting block has no
+  // padding of its own, so its natural rendered height already matches
+  // the header's usable content area — no extra subtraction needed here.
+  const greetingEl = document.getElementById('greeting-block');
+  const size = Math.max(40, greetingEl.getBoundingClientRect().height);
+  clockSvg.style.width = size + 'px';
+  clockSvg.style.height = size + 'px';
+}
+
+function tickAnalogClock(){
+  const now = new Date();
+  const hours = now.getHours() % 12;
+  const minutes = now.getMinutes();
+  const seconds = now.getSeconds();
+  clockHourHand.setAttribute('transform', `rotate(${(hours + minutes / 60) * 30} 50 50)`);
+  clockMinuteHand.setAttribute('transform', `rotate(${(minutes + seconds / 60) * 6} 50 50)`);
+}
+sizeAnalogClock();
+tickAnalogClock();
+setInterval(tickAnalogClock, 1000);
+window.addEventListener('resize', sizeAnalogClock);
+
 // ================== SCHEDULE: Tasks / Classes & Work / Personal ==================
+const ICONS = {
+  tasks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3 6 1.3 1.3L6.5 5M3 12l1.3 1.3L6.5 11M3 18l1.3 1.3L6.5 17"/></svg>',
+  work: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></svg>',
+  personal: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 6 3 8 9 10-6 2-8 4-9 10-1-6-3-8-9-10 6-2 8-4 9-10Z"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>',
+  cloud: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 19a4.5 4.5 0 0 1 .3-9 6 6 0 0 1 11.4 1.9A4.2 4.2 0 0 1 17 19H6.5Z"/></svg>'
+};
 const columnMeta = {
-  tasks: {label:'Tasks', icon:'⏰', color:'#f7b955', dim:'rgba(247,185,85,0.16)'},
-  work: {label:'Classes & work', icon:'🎬', color:'#4fd9c7', dim:'rgba(79,217,199,0.16)'},
-  personal: {label:'Personal', icon:'✨', color:'#93a3c9', dim:'rgba(147,163,201,0.14)'}
+  tasks: {label:'Tasks', icon:ICONS.tasks, color:'#f7b955', dim:'rgba(247,185,85,0.16)'},
+  work: {label:'Classes & work', icon:ICONS.work, color:'#4fd9c7', dim:'rgba(79,217,199,0.16)'},
+  personal: {label:'Personal', icon:ICONS.personal, color:'#93a3c9', dim:'rgba(147,163,201,0.14)'}
 };
 
 function buildColShell(key){
@@ -546,7 +618,7 @@ function buildColShell(key){
   const col = document.createElement('div');
   col.className = 'glass glass-hover rounded-3xl p-4 h-[380px] flex flex-col';
   col.innerHTML = `<div class="flex items-center gap-2.5 mb-3 flex-shrink-0">
-      <div class="icon-badge w-6 h-6 rounded-lg flex items-center justify-center text-xs" style="background:${meta.dim};color:${meta.color};">${meta.icon}</div>
+      <div class="icon-badge w-6 h-6 rounded-lg flex items-center justify-center p-1" style="background:${meta.dim};color:${meta.color};">${meta.icon}</div>
       <div class="text-sm font-semibold">${meta.label}</div>
       <div class="ml-auto text-xs text-slate-500" id="count-${key}"></div>
     </div>
@@ -564,7 +636,7 @@ function eventItemHtml(time, title, sub){
 
 function emptyStateHtml(icon, title, sub){
   return `<div class="text-center py-6 px-2">
-      <div class="text-lg opacity-50 mb-1.5">${icon}</div>
+      <div class="w-6 h-6 mx-auto opacity-40 mb-1.5">${icon}</div>
       <div class="text-xs text-slate-400 font-medium">${title}</div>
       <div class="text-[11px] text-slate-500 mt-1 leading-relaxed">${sub}</div>
     </div>`;
@@ -577,7 +649,7 @@ function renderTasksColumn(){
   const list = liveIncompleteTasks || [];
   count.textContent = list.length || '';
   if(list.length === 0){
-    body.innerHTML = emptyStateHtml('✅', 'All caught up', 'No incomplete tasks found.');
+    body.innerHTML = emptyStateHtml(ICONS.check, 'All caught up', 'No incomplete tasks found.');
     return;
   }
   body.innerHTML = list.map(t => eventItemHtml(t.date || '', t.title, t.sub || '')).join('');
@@ -641,7 +713,7 @@ function renderDayColumn(key, day){
     } else {
       sub = `No ${key === 'work' ? 'classes or AV shifts' : 'other events'} on the calendar for ${day}.`;
     }
-    body.innerHTML = emptyStateHtml(key === 'work' ? '🎬' : '☁️', 'Nothing here', sub);
+    body.innerHTML = emptyStateHtml(key === 'work' ? ICONS.work : ICONS.cloud, 'Nothing here', sub);
   } else {
     body.innerHTML = events.map(ev => eventItemHtml(ev.time || '', ev.title, ev.sub || '')).join('');
   }
@@ -842,17 +914,10 @@ async function fetchGoogleData(){
   }) : [];
 
   renderPriorityItems(Array.isArray(data.priorityEmails) ? data.priorityEmails : []);
-  updateHeaderStats(liveEventsToday.length, liveIncompleteTasks.length, Array.isArray(data.priorityEmails) ? data.priorityEmails.length : 0);
 
   renderTasksColumn();
   renderDayColumn('work', activeDay);
   renderDayColumn('personal', activeDay);
-}
-
-function updateHeaderStats(eventsCount, tasksCount, unreadCount){
-  document.getElementById('stat-events').textContent = `${eventsCount} event${eventsCount === 1 ? '' : 's'} today`;
-  document.getElementById('stat-tasks').textContent = `${tasksCount} task${tasksCount === 1 ? '' : 's'} open`;
-  document.getElementById('stat-unread').textContent = `${unreadCount} unread`;
 }
 
 // ================== WEATHER (Open-Meteo) ==================
@@ -865,14 +930,23 @@ function weatherDescription(code){
   };
   return map[code] || 'Fair';
 }
-function weatherEmoji(code){
-  if(code === 0) return '☀️';
-  if(code === 1 || code === 2) return '⛅';
-  if(code === 3 || code === 45 || code === 48) return '☁️';
-  if([51,53,55,61,63,65,80,81,82].includes(code)) return '🌧️';
-  if([71,73,75].includes(code)) return '🌨️';
-  if([95,96,99].includes(code)) return '⛈️';
-  return '🌡️';
+const WEATHER_SVG = {
+  sun: '<circle cx="12" cy="12" r="4.5" fill="currentColor"/><g stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="12" y1="2" x2="12" y2="4.5"/><line x1="12" y1="19.5" x2="12" y2="22"/><line x1="2" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22" y2="12"/><line x1="4.5" y1="4.5" x2="6.2" y2="6.2"/><line x1="17.8" y1="17.8" x2="19.5" y2="19.5"/><line x1="4.5" y1="19.5" x2="6.2" y2="17.8"/><line x1="17.8" y1="6.2" x2="19.5" y2="4.5"/></g>',
+  cloud: '<path fill="currentColor" d="M6 18a4.5 4.5 0 0 1 .3-9 6 6 0 0 1 11.4 1.9A4 4 0 0 1 17 18H6Z"/>',
+  cloudSun: '<circle cx="8" cy="7" r="3" fill="currentColor" opacity="0.85"/><path fill="currentColor" d="M6.5 19a4 4 0 0 1 .2-8 5.4 5.4 0 0 1 10.3 1.7A3.6 3.6 0 0 1 16.5 19h-10Z"/>',
+  rain: '<path fill="currentColor" d="M6 14a4.5 4.5 0 0 1 .3-9 6 6 0 0 1 11.4 1.9A4 4 0 0 1 17 14H6Z"/><g stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="8" y1="17" x2="7" y2="20.5"/><line x1="12" y1="17" x2="11" y2="20.5"/><line x1="16" y1="17" x2="15" y2="20.5"/></g>',
+  snow: '<path fill="currentColor" d="M6 13a4.5 4.5 0 0 1 .3-9 6 6 0 0 1 11.4 1.9A4 4 0 0 1 17 13H6Z"/><g stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="8" y1="16" x2="8" y2="21"/><line x1="5.5" y1="17.3" x2="10.5" y2="19.7"/><line x1="10.5" y1="17.3" x2="5.5" y2="19.7"/><line x1="16" y1="16" x2="16" y2="21"/><line x1="13.5" y1="17.3" x2="18.5" y2="19.7"/><line x1="18.5" y1="17.3" x2="13.5" y2="19.7"/></g>',
+  storm: '<path fill="currentColor" d="M6 12a4.5 4.5 0 0 1 .3-9 6 6 0 0 1 11.4 1.9A4 4 0 0 1 17 12H6Z"/><path fill="currentColor" d="m13 11-3 5.5h2.4L11 21l5-6h-2.6l1.3-2.3H13Z"/>'
+};
+function weatherIconSvg(code){
+  let key = 'sun';
+  if(code === 0) key = 'sun';
+  else if(code === 1 || code === 2) key = 'cloudSun';
+  else if(code === 3 || code === 45 || code === 48) key = 'cloud';
+  else if([51,53,55,61,63,65,80,81,82].includes(code)) key = 'rain';
+  else if([71,73,75].includes(code)) key = 'snow';
+  else if([95,96,99].includes(code)) key = 'storm';
+  return `<svg viewBox="0 0 24 24" class="w-full h-full">${WEATHER_SVG[key]}</svg>`;
 }
 async function fetchWeatherData(){
   // Geolocation removed on purpose — it re-prompted for permission on every
@@ -888,7 +962,7 @@ async function fetchWeatherData(){
   const code = data.current_weather.weathercode;
   const high = Math.round(data.daily.temperature_2m_max[0]);
   const low = Math.round(data.daily.temperature_2m_min[0]);
-  document.getElementById('weather-emoji').textContent = weatherEmoji(code);
+  document.getElementById('weather-emoji').innerHTML = weatherIconSvg(code);
   document.getElementById('weather-temp').textContent = `${temp}°`;
   document.getElementById('weather-cond').textContent = `${weatherDescription(code)} · High ${high}° Low ${low}°`;
 }
@@ -1040,6 +1114,7 @@ document.getElementById('qa-submit').addEventListener('click', async () => {
     isAllDay: isAllDay,
     start: isAllDay ? `${date}T00:00:00` : `${date}T${startTime}:00`,
     end: isAllDay ? `${date}T00:00:00` : `${date}T${endTime}:00`,
+    calendar: document.getElementById('qa-calendar').value,
     key: DASHBOARD_KEY
   };
 
