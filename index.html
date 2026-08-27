@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DailyDashboard v32 — bump this (and the matching footer text) by 1 on every future update -->
+<!-- DailyDashboard v34 — bump this (and the matching footer text) by 1 on every future update -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
@@ -32,6 +32,7 @@
   }
   body{
     font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Inter,sans-serif;
+    background-attachment:fixed;
     transition:background .3s ease, color .3s ease;
   }
   html:not([data-theme="light"]) body{
@@ -42,12 +43,14 @@
       radial-gradient(800px 600px at 8% 88%, rgba(247,185,85,0.10), transparent 55%),
       radial-gradient(700px 500px at 50% 45%, rgba(10,132,255,0.08), transparent 60%),
       linear-gradient(180deg, #020308 0%, #060810 100%);
+    background-attachment:fixed;
   }
   html[data-theme="light"] body{
     background:
       radial-gradient(1100px 800px at 8% -8%, rgba(255,255,255,0.55), transparent 58%),
       radial-gradient(900px 700px at 100% 105%, rgba(50,55,72,0.28), transparent 60%),
       linear-gradient(135deg, #c5c9d3 0%, #a9aebd 38%, #8b92a4 72%, #6d7488 100%);
+    background-attachment:fixed;
   }
   html[data-theme="light"] .orb{ display:none; }
   .orb{position:fixed;border-radius:50%;filter:blur(85px);pointer-events:none;z-index:0;}
@@ -85,6 +88,16 @@
     pointer-events:none;z-index:0;
   }
   .glass > *{position:relative;z-index:1;}
+  /* Lightweight glass variant for small pills whose text is set directly
+     via textContent (the header stat counters) — no wrapping child element
+     exists for a `.glass > *` z-index rule to lift above the sheen overlay,
+     so this skips the sheen/::before entirely rather than fighting that. */
+  .mini-pill{
+    background:var(--glass-bg);
+    backdrop-filter:blur(16px) saturate(150%);
+    -webkit-backdrop-filter:blur(16px) saturate(150%);
+    border:1px solid var(--glass-border);
+  }
   .glass-hover:hover{
     transform:translateY(-8px) scale(1.015);
     border-color:var(--glass-border-hover);
@@ -313,9 +326,9 @@
     </div>
 
     <div class="flex flex-wrap md:flex-col gap-1.5 md:items-end">
-      <span id="stat-events" class="text-[11px] text-slate-400 glass rounded-full px-3 py-1 whitespace-nowrap">– events today</span>
-      <span id="stat-tasks" class="text-[11px] text-slate-400 glass rounded-full px-3 py-1 whitespace-nowrap">– tasks open</span>
-      <span id="stat-unread" class="text-[11px] text-slate-400 glass rounded-full px-3 py-1 whitespace-nowrap">– unread</span>
+      <span id="stat-events" class="text-[11px] text-slate-400 mini-pill rounded-full px-3 py-1 whitespace-nowrap">– events today</span>
+      <span id="stat-tasks" class="text-[11px] text-slate-400 mini-pill rounded-full px-3 py-1 whitespace-nowrap">– tasks open</span>
+      <span id="stat-unread" class="text-[11px] text-slate-400 mini-pill rounded-full px-3 py-1 whitespace-nowrap">– unread</span>
     </div>
   </header>
 
@@ -332,18 +345,18 @@
   <!-- Quick add event -->
   <section>
     <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-2 ml-1">Quick add event</h2>
-    <div class="glass glass-hover rounded-3xl p-3">
+    <div class="glass glass-hover rounded-3xl" style="padding:16px 12px;">
       <div class="flex flex-wrap gap-2 items-center">
         <input id="qa-title" type="text" maxlength="140" placeholder="Event title"
           class="h-8 leading-8 flex-1 min-w-[140px] bg-white/5 border border-white/10 rounded-lg px-3 text-xs text-slate-200 outline-none focus:border-white/30">
 
         <input id="qa-date" type="date"
-          class="h-8 leading-8 bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
+          class="h-8 bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
 
         <div id="qa-time-fields" class="flex items-center gap-1">
-          <input id="qa-start" type="time" class="h-8 leading-8 w-[92px] bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
+          <input id="qa-start" type="time" class="h-8 w-[92px] bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
           <span class="text-slate-600 text-xs">–</span>
-          <input id="qa-end" type="time" class="h-8 leading-8 w-[92px] bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
+          <input id="qa-end" type="time" class="h-8 w-[92px] bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
         </div>
 
         <label class="h-8 flex items-center gap-1 text-[11px] text-slate-400 cursor-pointer whitespace-nowrap">
@@ -353,8 +366,13 @@
 
         <button id="qa-submit" class="h-8 leading-8 text-xs px-3 rounded-lg bg-emerald-400/15 border border-emerald-300/30 text-emerald-300 font-semibold hover:bg-emerald-400/25 transition-all whitespace-nowrap">Create event</button>
       </div>
-      <div id="qa-status" class="text-[11px] mt-1 min-h-[10px]"></div>
     </div>
+    <!-- Status message lives OUTSIDE the card as a caption underneath, not
+         inside it — reserving space for it inside the card was making the
+         top/bottom padding uneven, which pushed the row visibly off-center
+         within the card even though the row's own contents were perfectly
+         aligned with each other. -->
+    <div id="qa-status" class="text-[11px] mt-1.5 min-h-[14px] px-1"></div>
   </section>
 
   <!-- Priority action items / Recent Drive files / Scratchpad -->
@@ -424,7 +442,7 @@
     </div>
   </section>
 
-  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v32</footer>
+  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v34</footer>
 
 </div>
 
