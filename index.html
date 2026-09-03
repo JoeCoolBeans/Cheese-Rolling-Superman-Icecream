@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DailyDashboard v38 — bump this (and the matching footer text) by 1 on every future update -->
+<!-- DailyDashboard v39 — bump this (and the matching footer text) by 1 on every future update -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
@@ -313,18 +313,20 @@
   <header id="dashboard-header" class="glass glass-hover rounded-3xl flex flex-wrap items-center justify-between gap-4" style="padding:12px 14px 12px 22px;">
     <div id="greeting-block">
       <h1 id="greeting-text" class="text-2xl md:text-3xl font-semibold tracking-tight">Good day</h1>
-      <p class="text-slate-400 text-xs mt-1 flex items-center gap-2">
-        <span id="weekday-text">–</span>
-        <span class="text-slate-600">|</span>
-        <span id="monthday-text">–</span>
-      </p>
-      <div class="flex items-center gap-2 mt-1 text-xs">
-        <span id="weather-emoji" class="w-4 h-4 text-slate-400 flex-shrink-0"></span>
-        <span id="weather-temp" class="font-semibold">--°</span>
-        <span class="text-slate-600">·</span>
-        <span id="weather-cond" class="text-slate-400 text-[11px]">Fetching weather…</span>
-        <span class="text-slate-600">·</span>
-        <span id="weather-city" class="text-slate-500 text-[11px]">Loading location…</span>
+      <div style="margin-top:10px;padding-left:10px;border-left:2px solid rgba(79,217,199,0.4);">
+        <p class="text-slate-400 text-xs font-medium flex items-center gap-2">
+          <span id="weekday-text">–</span>
+          <span class="text-slate-600">|</span>
+          <span id="monthday-text">–</span>
+        </p>
+        <div class="flex items-center gap-2 mt-1.5 text-xs font-normal" style="opacity:0.85;">
+          <span id="weather-emoji" class="w-4 h-4 text-slate-500 flex-shrink-0"></span>
+          <span id="weather-temp" class="font-medium text-slate-300">--°</span>
+          <span class="text-slate-600">·</span>
+          <span id="weather-cond" class="text-slate-500 text-[11px]">Fetching weather…</span>
+          <span class="text-slate-600">·</span>
+          <span id="weather-city" class="text-slate-600 text-[11px]">Loading location…</span>
+        </div>
       </div>
     </div>
 
@@ -447,7 +449,7 @@
     </div>
   </section>
 
-  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v38</footer>
+  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v39</footer>
 
 </div>
 
