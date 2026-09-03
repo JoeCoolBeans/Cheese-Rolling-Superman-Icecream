@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DailyDashboard v37 — bump this (and the matching footer text) by 1 on every future update -->
+<!-- DailyDashboard v38 — bump this (and the matching footer text) by 1 on every future update -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
@@ -312,7 +312,7 @@
   <!-- Header: greeting + date + weather (left) / quick stats (right) -->
   <header id="dashboard-header" class="glass glass-hover rounded-3xl flex flex-wrap items-center justify-between gap-4" style="padding:12px 14px 12px 22px;">
     <div id="greeting-block">
-      <h1 id="greeting-text" class="text-lg md:text-xl font-semibold tracking-tight">Good day</h1>
+      <h1 id="greeting-text" class="text-2xl md:text-3xl font-semibold tracking-tight">Good day</h1>
       <p class="text-slate-400 text-xs mt-1 flex items-center gap-2">
         <span id="weekday-text">–</span>
         <span class="text-slate-600">|</span>
@@ -338,7 +338,7 @@
       <button class="daytab active px-4 py-2 rounded-full text-sm font-medium glass" data-day="today">Today</button>
       <button class="daytab px-4 py-2 rounded-full text-sm font-medium glass" data-day="tomorrow">Tomorrow</button>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="schedule-grid"></div>
+    <div class="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-4" id="schedule-grid"></div>
   </section>
 
   <!-- Quick add event -->
@@ -447,7 +447,7 @@
     </div>
   </section>
 
-  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v37</footer>
+  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v38</footer>
 
 </div>
 
@@ -599,18 +599,26 @@ tickAnalogClock();
 setInterval(tickAnalogClock, 1000);
 window.addEventListener('resize', sizeAnalogClock);
 
-// ================== SCHEDULE: Tasks / Classes & Work / Personal ==================
+// ================== SCHEDULE: Calendar / Tasks ==================
 const ICONS = {
   tasks: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3 6 1.3 1.3L6.5 5M3 12l1.3 1.3L6.5 11M3 18l1.3 1.3L6.5 17"/></svg>',
   work: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></svg>',
   personal: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 6 3 8 9 10-6 2-8 4-9 10-1-6-3-8-9-10 6-2 8-4 9-10Z"/></svg>',
+  calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
   check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>',
   cloud: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 19a4.5 4.5 0 0 1 .3-9 6 6 0 0 1 11.4 1.9A4.2 4.2 0 0 1 17 19H6.5Z"/></svg>'
 };
+// Classes/Work and Personal used to be two separate columns; now merged into
+// one combined "Calendar" column. CATEGORY_META still holds the color used
+// to tag each event's source (a small dot) since that distinction is still
+// useful to see at a glance even though they share one list now.
+const CATEGORY_META = {
+  work: { color:'#4fd9c7' },
+  personal: { color:'#93a3c9' }
+};
 const columnMeta = {
-  tasks: {label:'Tasks', icon:ICONS.tasks, color:'#f7b955', dim:'rgba(247,185,85,0.16)'},
-  work: {label:'Classes & work', icon:ICONS.work, color:'#4fd9c7', dim:'rgba(79,217,199,0.16)'},
-  personal: {label:'Personal', icon:ICONS.personal, color:'#93a3c9', dim:'rgba(147,163,201,0.14)'}
+  calendar: {label:'Calendar', icon:ICONS.calendar, color:'#4fd9c7', dim:'rgba(79,217,199,0.16)'},
+  tasks: {label:'Tasks', icon:ICONS.tasks, color:'#f7b955', dim:'rgba(247,185,85,0.16)'}
 };
 
 function buildColShell(key){
@@ -626,10 +634,11 @@ function buildColShell(key){
   return col;
 }
 
-function eventItemHtml(time, title, sub){
+function eventItemHtml(time, title, sub, dotColor){
+  const dot = dotColor ? `<span class="inline-block w-1.5 h-1.5 rounded-full mr-1.5 flex-shrink-0" style="background:${dotColor};"></span>` : '';
   return `<div class="bg-white/[0.035] border border-white/5 rounded-xl px-3 py-2.5">
       <div class="text-[10.5px] text-slate-500 tabular-nums">${time}</div>
-      <div class="text-[12.5px] text-slate-200 font-medium mt-0.5">${title}</div>
+      <div class="text-[12.5px] text-slate-200 font-medium mt-0.5 flex items-center">${dot}${title}</div>
       ${sub ? `<div class="text-[11px] text-slate-400 mt-0.5">${sub}</div>` : ''}
     </div>`;
 }
@@ -667,65 +676,55 @@ function parseTimeToMinutes(str){
   return h * 60 + m;
 }
 
-function renderDayColumn(key, day){
-  const meta = columnMeta[key];
-  const body = document.getElementById('body-' + key);
-  const count = document.getElementById('count-' + key);
+function renderCalendarColumn(day){
+  const body = document.getElementById('body-calendar');
+  const count = document.getElementById('count-calendar');
   if(!body) return;
 
-  let events = [];
-  if(day === 'today'){
-    events = liveEventsToday.filter(e => e.category === key);
-  } else {
-    events = liveEventsTomorrow.filter(e => e.category === key);
-  }
+  let events = (day === 'today' ? liveEventsToday : liveEventsTomorrow)
+    .filter(e => e.category === 'work' || e.category === 'personal');
 
-  // Personal AND Classes & Work columns: drop events that have already
-  // ended today, and sort so all-day events stay pinned at top, then
-  // soonest-upcoming first.
-  if(key === 'personal' || key === 'work'){
-    if(day === 'today'){
-      const now = new Date();
-      const nowMinutes = now.getHours() * 60 + now.getMinutes();
-      events = events.filter(ev => {
-        if(ev.isAllDay) return true;
-        const endMinutes = parseTimeToMinutes(ev.endTime) ?? parseTimeToMinutes(ev.startTime);
-        return endMinutes === null || endMinutes >= nowMinutes;
-      });
-    }
-    events = events.slice().sort((a, b) => {
-      if(a.isAllDay && !b.isAllDay) return -1;
-      if(!a.isAllDay && b.isAllDay) return 1;
-      if(a.isAllDay && b.isAllDay) return 0;
-      const aStart = parseTimeToMinutes(a.startTime) ?? 9999;
-      const bStart = parseTimeToMinutes(b.startTime) ?? 9999;
-      return aStart - bStart;
+  // Drop events that have already ended today, then sort so all-day events
+  // stay pinned at top, followed by soonest-upcoming first — same logic
+  // that used to apply separately to each of the two columns this replaced.
+  if(day === 'today'){
+    const now = new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    events = events.filter(ev => {
+      if(ev.isAllDay) return true;
+      const endMinutes = parseTimeToMinutes(ev.endTime) ?? parseTimeToMinutes(ev.startTime);
+      return endMinutes === null || endMinutes >= nowMinutes;
     });
   }
+  events = events.slice().sort((a, b) => {
+    if(a.isAllDay && !b.isAllDay) return -1;
+    if(!a.isAllDay && b.isAllDay) return 1;
+    if(a.isAllDay && b.isAllDay) return 0;
+    const aStart = parseTimeToMinutes(a.startTime) ?? 9999;
+    const bStart = parseTimeToMinutes(b.startTime) ?? 9999;
+    return aStart - bStart;
+  });
 
   count.textContent = events.length ? events.length : '';
   if(events.length === 0){
-    let sub;
-    if(day === 'tomorrow' && !tomorrowDataLoaded){
-      sub = "Waiting on your Apps Script to include eventsTomorrow — hit refresh once it's redeployed.";
-    } else if(key === 'personal' && day === 'today'){
-      sub = "Nothing left today — everything's either done or it's an all-day event already shown elsewhere.";
-    } else {
-      sub = `No ${key === 'work' ? 'classes or AV shifts' : 'other events'} on the calendar for ${day}.`;
-    }
-    body.innerHTML = emptyStateHtml(key === 'work' ? ICONS.work : ICONS.cloud, 'Nothing here', sub);
+    const sub = (day === 'tomorrow' && !tomorrowDataLoaded)
+      ? "Waiting on your Apps Script to include eventsTomorrow — hit refresh once it's redeployed."
+      : `Nothing on the calendar for ${day}.`;
+    body.innerHTML = emptyStateHtml(ICONS.calendar, 'Nothing here', sub);
   } else {
-    body.innerHTML = events.map(ev => eventItemHtml(ev.time || '', ev.title, ev.sub || '')).join('');
+    body.innerHTML = events.map(ev =>
+      eventItemHtml(ev.time || '', ev.title, ev.sub || '', CATEGORY_META[ev.category]?.color)
+    ).join('');
   }
 }
 
 function initScheduleShell(){
   const grid = document.getElementById('schedule-grid');
   grid.innerHTML = '';
-  ['tasks','work','personal'].forEach(key => grid.appendChild(buildColShell(key)));
+  // Calendar on the left, Tasks on the right.
+  ['calendar','tasks'].forEach(key => grid.appendChild(buildColShell(key)));
+  renderCalendarColumn(activeDay);
   renderTasksColumn();
-  renderDayColumn('work', activeDay);
-  renderDayColumn('personal', activeDay);
 }
 initScheduleShell();
 
@@ -734,8 +733,7 @@ document.querySelectorAll('.daytab').forEach(tab => {
     document.querySelectorAll('.daytab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
     activeDay = tab.dataset.day;
-    renderDayColumn('work', activeDay);
-    renderDayColumn('personal', activeDay);
+    renderCalendarColumn(activeDay);
   });
 });
 
@@ -916,8 +914,7 @@ async function fetchGoogleData(){
   renderPriorityItems(Array.isArray(data.priorityEmails) ? data.priorityEmails : []);
 
   renderTasksColumn();
-  renderDayColumn('work', activeDay);
-  renderDayColumn('personal', activeDay);
+  renderCalendarColumn(activeDay);
 }
 
 // ================== WEATHER (Open-Meteo) ==================
@@ -976,6 +973,14 @@ async function refreshAll(){
   const results = await Promise.allSettled([fetchGoogleData(), fetchWeatherData()]);
   const failed = results.filter(r => r.status === 'rejected');
   failed.forEach(f => console.error('Refresh error:', f.reason));
+
+  // Countdown depends only on today's date, not on any network data, but
+  // it was never re-run as part of this cycle — only on page load, on
+  // manually editing the dates, or when the tab regains visibility. If the
+  // page just sits open and visible across a day rollover, it would go
+  // stale until something else triggered a re-render. Piggybacking it onto
+  // the existing 15-minute timer fixes that with no extra timer needed.
+  renderCountdown();
 
   icon.classList.remove('spinning'); btn.disabled = false;
 
