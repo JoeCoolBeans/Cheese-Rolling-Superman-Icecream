@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DailyDashboard v42 — bump this (and the matching footer text) by 1 on every future update -->
+<!-- DailyDashboard v43 — bump this (and the matching footer text) by 1 on every future update -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
@@ -409,7 +409,7 @@
     </div>
   </section>
 
-  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v42</footer>
+  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v43</footer>
 
 </div>
 
@@ -642,6 +642,17 @@ function emptyStateHtml(icon, title, sub){
     </div>`;
 }
 
+function taskItemHtml(task, index){
+  return `<div class="bg-white/[0.035] border border-white/5 rounded-xl px-3 py-2.5 flex items-start gap-2.5" data-task-index="${index}">
+      <button class="task-checkbox w-4 h-4 rounded-md border border-white/25 flex-shrink-0 mt-0.5 flex items-center justify-center hover:border-emerald-300/60 hover:bg-emerald-400/10 transition-all" data-task-index="${index}" title="Mark complete" aria-label="Mark task complete"></button>
+      <div class="min-w-0 flex-1">
+        <div class="text-[11.5px] text-slate-500 tabular-nums">${task.date || ''}</div>
+        <div class="text-[13.5px] text-slate-200 font-medium mt-0.5">${escapeHTML(task.title)}</div>
+        ${task.sub ? `<div class="text-xs text-slate-400 mt-0.5">${escapeHTML(task.sub)}</div>` : ''}
+      </div>
+    </div>`;
+}
+
 function renderTasksColumn(){
   const body = document.getElementById('body-tasks');
   const count = document.getElementById('count-tasks');
@@ -652,7 +663,53 @@ function renderTasksColumn(){
     body.innerHTML = emptyStateHtml(ICONS.check, 'All caught up', 'No incomplete tasks found.');
     return;
   }
-  body.innerHTML = list.map(t => eventItemHtml(t.date || '', t.title, t.sub || '')).join('');
+  body.innerHTML = list.map((t, i) => taskItemHtml(t, i)).join('');
+
+  body.querySelectorAll('.task-checkbox').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const i = parseInt(btn.dataset.taskIndex, 10);
+      completeTaskAction(i);
+    });
+  });
+}
+
+// Optimistic UI: the task disappears from the list immediately on click
+// rather than waiting for the network round-trip, since this should feel
+// instant. If the server call actually fails, it's put back and an error
+// shown — quietly, since a failed checkbox click isn't worth interrupting
+// someone over, but it shouldn't just silently lose the click either.
+async function completeTaskAction(index){
+  const task = liveIncompleteTasks[index];
+  if(!task || !task.taskId || !task.tasklistId){
+    console.error('Task is missing taskId/tasklistId — cannot complete it.', task);
+    return;
+  }
+
+  liveIncompleteTasks = liveIncompleteTasks.filter((_, i) => i !== index);
+  renderTasksColumn();
+
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'completeTask', taskId: task.taskId, tasklistId: task.tasklistId, key: DASHBOARD_KEY })
+    });
+    const data = await res.json();
+    if(!data.success){
+      throw new Error(data.error || 'Unknown error completing task.');
+    }
+  }catch(err){
+    // Re-add just this one task rather than restoring a full snapshot of
+    // the old array — if a refresh happened to land while this request was
+    // in flight, liveIncompleteTasks may have already moved on, and a full
+    // snapshot restore would clobber that instead of just undoing this
+    // one failed click.
+    console.error('Failed to complete task:', err);
+    if(!liveIncompleteTasks.some(t => t.taskId === task.taskId)){
+      liveIncompleteTasks = [task, ...liveIncompleteTasks];
+    }
+    renderTasksColumn();
+  }
 }
 
 function parseTimeToMinutes(str){
@@ -916,7 +973,7 @@ async function fetchGoogleData(){
       const d = new Date(t.due);
       dateLabel = isNaN(d) ? String(t.due) : d.toLocaleDateString('en-US', {month:'short', day:'numeric'});
     }
-    return { date: dateLabel, title: t.title || 'Untitled task', sub: t.notes || '' };
+    return { date: dateLabel, title: t.title || 'Untitled task', sub: t.notes || '', taskId: t.taskId, tasklistId: t.tasklistId };
   }) : [];
 
   renderPriorityItems(Array.isArray(data.priorityEmails) ? data.priorityEmails : []);
