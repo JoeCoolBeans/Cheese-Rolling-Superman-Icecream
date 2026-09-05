@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DailyDashboard v39 — bump this (and the matching footer text) by 1 on every future update -->
+<!-- DailyDashboard v42 — bump this (and the matching footer text) by 1 on every future update -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
@@ -160,13 +160,12 @@
   ::-webkit-scrollbar-track{ background:transparent; }
   ::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.15); border-radius:6px; }
   ::-webkit-scrollbar-thumb:hover{ background:rgba(255,255,255,0.25); }
-  html:not([data-theme="light"])::-webkit-scrollbar-track, html:not([data-theme="light"]) body::-webkit-scrollbar-track{ background:#060810; }
+  html::-webkit-scrollbar-track, body::-webkit-scrollbar-track{ background:#060810; }
   html[data-theme="light"]::-webkit-scrollbar-track, html[data-theme="light"] body::-webkit-scrollbar-track{ background:#dfe2e9; }
-  html[data-theme="light"]::-webkit-scrollbar-thumb{ background:rgba(20,22,35,0.18); }
-  html[data-theme="light"]::-webkit-scrollbar-thumb:hover{ background:rgba(20,22,35,0.28); }
+  html[data-theme="light"] ::-webkit-scrollbar-thumb{ background:rgba(20,22,35,0.18); }
+  html[data-theme="light"] ::-webkit-scrollbar-thumb:hover{ background:rgba(20,22,35,0.28); }
   *{ scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent; }
-  html:not([data-theme="light"]){ scrollbar-color: rgba(255,255,255,0.15) #060810; }
-  html[data-theme="light"]{ scrollbar-color: rgba(20,22,35,0.18) #dfe2e9; }
+  html[data-theme="light"] *{ scrollbar-color: rgba(20,22,35,0.18) transparent; }
   .daytab{ transition:all .2s ease; }
   /* A clear accent-colored active state instead of a near-invisible tone-
      on-tone overlay — that version wasn't distinct enough in dark mode and
@@ -313,19 +312,19 @@
   <header id="dashboard-header" class="glass glass-hover rounded-3xl flex flex-wrap items-center justify-between gap-4" style="padding:12px 14px 12px 22px;">
     <div id="greeting-block">
       <h1 id="greeting-text" class="text-2xl md:text-3xl font-semibold tracking-tight">Good day</h1>
-      <div style="margin-top:10px;padding-left:10px;border-left:2px solid rgba(79,217,199,0.4);">
-        <p class="text-slate-400 text-xs font-medium flex items-center gap-2">
+      <div style="margin-top:10px;padding-left:10px;border-left:2px solid rgba(79,217,199,0.85);">
+        <p class="text-slate-200 text-sm font-medium flex items-center gap-2">
           <span id="weekday-text">–</span>
-          <span class="text-slate-600">|</span>
+          <span class="text-slate-500">|</span>
           <span id="monthday-text">–</span>
         </p>
-        <div class="flex items-center gap-2 mt-1.5 text-xs font-normal" style="opacity:0.85;">
-          <span id="weather-emoji" class="w-4 h-4 text-slate-500 flex-shrink-0"></span>
-          <span id="weather-temp" class="font-medium text-slate-300">--°</span>
-          <span class="text-slate-600">·</span>
-          <span id="weather-cond" class="text-slate-500 text-[11px]">Fetching weather…</span>
-          <span class="text-slate-600">·</span>
-          <span id="weather-city" class="text-slate-600 text-[11px]">Loading location…</span>
+        <div class="flex items-center gap-2 mt-1.5 text-xs font-normal">
+          <span id="weather-emoji" class="w-4 h-4 text-slate-300 flex-shrink-0"></span>
+          <span id="weather-temp" class="font-semibold text-slate-100">--°</span>
+          <span class="text-slate-500">·</span>
+          <span id="weather-cond" class="text-slate-300 text-[11px]">Fetching weather…</span>
+          <span class="text-slate-500">·</span>
+          <span id="weather-city" class="text-slate-400 text-[11px]">Loading location…</span>
         </div>
       </div>
     </div>
@@ -341,45 +340,6 @@
       <button class="daytab px-4 py-2 rounded-full text-sm font-medium glass" data-day="tomorrow">Tomorrow</button>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-4" id="schedule-grid"></div>
-  </section>
-
-  <!-- Quick add event -->
-  <section>
-    <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-4 ml-1">Quick add event</h2>
-    <div class="glass glass-hover rounded-3xl" style="padding:16px 12px;">
-      <div class="flex flex-wrap gap-2 items-center">
-        <input id="qa-title" type="text" maxlength="140" placeholder="Event title"
-          class="h-8 leading-8 flex-1 min-w-[140px] bg-white/5 border border-white/10 rounded-lg px-3 text-xs text-slate-200 outline-none focus:border-white/30">
-
-        <input id="qa-date" type="date"
-          class="h-8 bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
-
-        <div id="qa-time-fields" class="flex items-center gap-1">
-          <input id="qa-start" type="time" class="h-8 w-[92px] bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
-          <span class="text-slate-600 text-xs">–</span>
-          <input id="qa-end" type="time" class="h-8 w-[92px] bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
-        </div>
-
-        <label class="h-8 flex items-center gap-1 text-[11px] text-slate-400 cursor-pointer whitespace-nowrap">
-          <input id="qa-allday" type="checkbox" class="rounded border-white/20 bg-white/5 w-3.5 h-3.5">
-          All day
-        </label>
-
-        <select id="qa-calendar" class="h-8 bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-300 outline-none focus:border-white/30 cursor-pointer">
-          <option value="Personal">Personal</option>
-          <option value="Classes">Classes</option>
-          <option value="Work">Work</option>
-        </select>
-
-        <button id="qa-submit" class="h-8 leading-8 text-xs px-3 rounded-lg bg-emerald-400/15 border border-emerald-300/30 text-emerald-300 font-semibold hover:bg-emerald-400/25 transition-all whitespace-nowrap">Create event</button>
-      </div>
-    </div>
-    <!-- Status message lives OUTSIDE the card as a caption underneath, not
-         inside it — reserving space for it inside the card was making the
-         top/bottom padding uneven, which pushed the row visibly off-center
-         within the card even though the row's own contents were perfectly
-         aligned with each other. -->
-    <div id="qa-status" class="text-[11px] mt-1.5 min-h-[14px] px-1"></div>
   </section>
 
   <!-- Priority action items / Recent Drive files / Scratchpad -->
@@ -449,7 +409,7 @@
     </div>
   </section>
 
-  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v39</footer>
+  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v42</footer>
 
 </div>
 
@@ -626,30 +586,59 @@ const columnMeta = {
 function buildColShell(key){
   const meta = columnMeta[key];
   const col = document.createElement('div');
-  col.className = 'glass glass-hover rounded-3xl p-4 h-[380px] flex flex-col';
+  const isCalendar = key === 'calendar';
+  col.className = `glass glass-hover rounded-3xl p-4 flex flex-col h-[430px]`;
+
+  const quickAddHtml = !isCalendar ? '' : `
+    <div class="flex-shrink-0 pt-3 mt-3" style="border-top:1px solid rgba(255,255,255,0.08);">
+      <div class="flex flex-wrap gap-2 items-center">
+        <input id="qa-title" type="text" maxlength="140" placeholder="Add an event…"
+          class="h-8 leading-8 flex-1 min-w-[120px] bg-white/5 border border-white/10 rounded-lg px-3 text-xs text-slate-200 outline-none focus:border-white/30">
+        <input id="qa-date" type="date"
+          class="h-8 bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
+        <div id="qa-time-fields" class="flex items-center gap-1">
+          <input id="qa-start" type="time" class="h-8 w-[86px] bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
+          <span class="text-slate-600 text-xs">–</span>
+          <input id="qa-end" type="time" class="h-8 w-[86px] bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
+        </div>
+        <label class="h-8 flex items-center gap-1 text-[11px] text-slate-400 cursor-pointer whitespace-nowrap">
+          <input id="qa-allday" type="checkbox" class="rounded border-white/20 bg-white/5 w-3.5 h-3.5">
+          All day
+        </label>
+        <select id="qa-calendar" class="h-8 bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-300 outline-none focus:border-white/30 cursor-pointer">
+          <option value="Personal">Personal</option>
+          <option value="Classes">Classes</option>
+          <option value="Work">Work</option>
+        </select>
+        <button id="qa-submit" class="h-8 leading-8 text-xs px-3 rounded-lg bg-emerald-400/15 border border-emerald-300/30 text-emerald-300 font-semibold hover:bg-emerald-400/25 transition-all whitespace-nowrap">Add</button>
+      </div>
+      <div id="qa-status" class="text-[11px] mt-1.5 min-h-[14px] px-1"></div>
+    </div>`;
+
   col.innerHTML = `<div class="flex items-center gap-2.5 mb-3 flex-shrink-0">
       <div class="icon-badge w-6 h-6 rounded-lg flex items-center justify-center p-1" style="background:${meta.dim};color:${meta.color};">${meta.icon}</div>
       <div class="text-sm font-semibold">${meta.label}</div>
       <div class="ml-auto text-xs text-slate-500" id="count-${key}"></div>
     </div>
-    <div class="space-y-2.5 overflow-y-auto pr-1 flex-1" id="body-${key}"></div>`;
+    <div class="space-y-2.5 overflow-y-auto pr-1 flex-1" id="body-${key}"></div>
+    ${quickAddHtml}`;
   return col;
 }
 
 function eventItemHtml(time, title, sub, dotColor){
   const dot = dotColor ? `<span class="inline-block w-1.5 h-1.5 rounded-full mr-1.5 flex-shrink-0" style="background:${dotColor};"></span>` : '';
   return `<div class="bg-white/[0.035] border border-white/5 rounded-xl px-3 py-2.5">
-      <div class="text-[10.5px] text-slate-500 tabular-nums">${time}</div>
-      <div class="text-[12.5px] text-slate-200 font-medium mt-0.5 flex items-center">${dot}${title}</div>
-      ${sub ? `<div class="text-[11px] text-slate-400 mt-0.5">${sub}</div>` : ''}
+      <div class="text-[11.5px] text-slate-500 tabular-nums">${time}</div>
+      <div class="text-[13.5px] text-slate-200 font-medium mt-0.5 flex items-center">${dot}${title}</div>
+      ${sub ? `<div class="text-xs text-slate-400 mt-0.5">${sub}</div>` : ''}
     </div>`;
 }
 
 function emptyStateHtml(icon, title, sub){
   return `<div class="text-center py-6 px-2">
       <div class="w-6 h-6 mx-auto opacity-40 mb-1.5">${icon}</div>
-      <div class="text-xs text-slate-400 font-medium">${title}</div>
-      <div class="text-[11px] text-slate-500 mt-1 leading-relaxed">${sub}</div>
+      <div class="text-sm text-slate-400 font-medium">${title}</div>
+      <div class="text-xs text-slate-500 mt-1 leading-relaxed">${sub}</div>
     </div>`;
 }
 
@@ -676,6 +665,19 @@ function parseTimeToMinutes(str){
   if(ampm === 'PM' && h !== 12) h += 12;
   if(ampm === 'AM' && h === 12) h = 0;
   return h * 60 + m;
+}
+
+// Bigger, bolder card for the single soonest non-all-day event — only
+// shown on the Today tab, since "next up" as a concept doesn't really
+// apply to tomorrow the same way. All-day events aren't eligible for this
+// slot since they're not time-urgent the way a scheduled item is.
+function nextUpItemHtml(time, title, sub, dotColor){
+  const dot = dotColor ? `<span class="inline-block w-2 h-2 rounded-full mr-2 flex-shrink-0" style="background:${dotColor};"></span>` : '';
+  return `<div class="bg-white/[0.05] border rounded-xl px-3.5 py-3" style="border-color:rgba(79,217,199,0.3);">
+      <div class="text-[10px] uppercase tracking-widest font-bold" style="color:#4fd9c7;">Next up</div>
+      <div class="text-base text-slate-100 font-semibold mt-1 flex items-center">${dot}${title}</div>
+      <div class="text-xs text-slate-400 mt-0.5">${time}${sub ? ' · ' + sub : ''}</div>
+    </div>`;
 }
 
 function renderCalendarColumn(day){
@@ -714,9 +716,13 @@ function renderCalendarColumn(day){
       : `Nothing on the calendar for ${day}.`;
     body.innerHTML = emptyStateHtml(ICONS.calendar, 'Nothing here', sub);
   } else {
-    body.innerHTML = events.map(ev =>
-      eventItemHtml(ev.time || '', ev.title, ev.sub || '', CATEGORY_META[ev.category]?.color)
-    ).join('');
+    const nextUpIndex = day === 'today' ? events.findIndex(ev => !ev.isAllDay) : -1;
+    body.innerHTML = events.map((ev, i) => {
+      const color = CATEGORY_META[ev.category]?.color;
+      return i === nextUpIndex
+        ? nextUpItemHtml(ev.time || '', ev.title, ev.sub || '', color)
+        : eventItemHtml(ev.time || '', ev.title, ev.sub || '', color);
+    }).join('');
   }
 }
 
@@ -866,9 +872,9 @@ function renderPriorityItems(emails){
   card.innerHTML = emails.map((p, i) => `
     <div class="${i > 0 ? 'border-t border-white/5 pt-2.5 mt-2.5' : ''}">
       <span class="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-rose-400/15 text-rose-300">Email</span>
-      <div class="text-[13px] font-semibold text-slate-100 mt-1.5 leading-snug">${escapeHTML(p.subject)}</div>
-      <div class="text-[11.5px] text-slate-400 mt-0.5 leading-relaxed">From ${escapeHTML(p.from)} · ${escapeHTML(p.date)}</div>
-      ${p.snippet ? `<div class="text-[11px] text-slate-500 mt-1 leading-relaxed italic">"${escapeHTML(p.snippet)}…"</div>` : ''}
+      <div class="text-sm font-semibold text-slate-100 mt-1.5 leading-snug">${escapeHTML(p.subject)}</div>
+      <div class="text-xs text-slate-400 mt-0.5 leading-relaxed">From ${escapeHTML(p.from)} · ${escapeHTML(p.date)}</div>
+      ${p.snippet ? `<div class="text-xs text-slate-500 mt-1 leading-relaxed italic">"${escapeHTML(p.snippet)}…"</div>` : ''}
     </div>`).join('');
 }
 document.getElementById('priority-card').innerHTML = `<div class="text-center text-slate-500 text-xs py-4">Loading unread email…</div>`;
