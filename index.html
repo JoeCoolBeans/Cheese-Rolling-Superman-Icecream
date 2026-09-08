@@ -165,14 +165,23 @@
   ::-webkit-scrollbar-thumb:hover{ background:rgba(255,255,255,0.25); }
   /* Page-level scrollbar hidden entirely — the page is still fully
      scrollable (touch, trackpad, keyboard, mouse wheel all still work),
-     there's just no visible bar for it. Card-level scrollbars below are
-     untouched and still show normally. */
+     there's just no visible bar for it. */
   html::-webkit-scrollbar, body::-webkit-scrollbar{ display:none; }
   html, body{ scrollbar-width:none; -ms-overflow-style:none; }
-  /* Every card-level scrollbar in light mode — this needs the descendant
-     space, since these ARE genuine descendants (unlike html/body above,
-     which no longer need theme-specific track colors now that the page
-     scrollbar is hidden rather than styled). */
+  /* scrollbar-width is an INHERITED property — the html/body rule above
+     could leak its "none" value down into every card's scrollbar too
+     unless something more specific and non-ambiguous wins that fight.
+     Targeting the actual scrollable elements directly (not a broad `*`
+     rule) removes any doubt about whether that override reliably applies
+     in every browser. */
+  #priority-card, #countdown-dots, .overflow-y-auto{ scrollbar-width:thin !important; }
+  html[data-theme="light"] #priority-card,
+  html[data-theme="light"] #countdown-dots,
+  html[data-theme="light"] .overflow-y-auto{ scrollbar-color: rgba(20,22,35,0.14) #e4e7ee !important; }
+  html:not([data-theme="light"]) #priority-card,
+  html:not([data-theme="light"]) #countdown-dots,
+  html:not([data-theme="light"]) .overflow-y-auto{ scrollbar-color: rgba(255,255,255,0.15) transparent !important; }
+  /* Card-level webkit track/thumb colors in light mode. */
   html[data-theme="light"] ::-webkit-scrollbar-track{ background:#e4e7ee; }
   html[data-theme="light"] ::-webkit-scrollbar-thumb{ background:rgba(20,22,35,0.14); }
   html[data-theme="light"] ::-webkit-scrollbar-thumb:hover{ background:rgba(20,22,35,0.22); }
