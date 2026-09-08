@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DailyDashboard v50 — bump this (and the matching footer text) by 1 on every future update -->
+<!-- DailyDashboard v51 — bump this (and the matching footer text) by 1 on every future update -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
@@ -130,7 +130,7 @@
   .expand-pill{
     height:44px; border-radius:22px; display:flex; align-items:center; overflow:hidden;
     cursor:pointer; width:44px; box-shadow:0 8px 24px rgba(0,0,0,0.35);
-    transition:width .75s cubic-bezier(.22,1,.36,1), background .75s ease, box-shadow .75s ease, border-color .75s ease;
+    transition:width .8s cubic-bezier(.22,1,.36,1), background .8s ease, box-shadow .8s ease, border-color .8s ease;
   }
   /* Hover width is set per-element via --expand-width (computed in JS from
      the actual label text), not a guessed fixed number — otherwise shorter
@@ -312,7 +312,7 @@
 <div class="max-w-6xl mx-auto space-y-4 relative z-10">
 
   <!-- Header: greeting + date + weather (left) / quick stats (right) -->
-  <header id="dashboard-header" class="glass glass-hover rounded-3xl flex flex-wrap items-center justify-between gap-4" style="padding:12px 14px 12px 22px;">
+  <header id="dashboard-header" class="glass glass-hover rounded-3xl flex flex-wrap items-center justify-between gap-4" style="padding:10px 14px 14px 22px;">
     <div id="greeting-block" class="item-fade-in">
       <h1 id="greeting-text" class="text-2xl md:text-3xl font-semibold tracking-tight">Good day</h1>
       <div style="margin-top:10px;padding-left:10px;border-left:2px solid rgba(79,217,199,0.85);">
@@ -412,7 +412,7 @@
     </div>
   </section>
 
-  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v50</footer>
+  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v51</footer>
 
 </div>
 
@@ -590,7 +590,7 @@ function buildColShell(key){
   const meta = columnMeta[key];
   const col = document.createElement('div');
   const isCalendar = key === 'calendar';
-  col.className = `glass glass-hover rounded-3xl p-4 flex flex-col h-[430px]`;
+  col.className = `glass glass-hover rounded-3xl p-5 flex flex-col h-[430px]`;
 
   const quickAddHtml = !isCalendar ? '' : `
     <div class="flex-shrink-0 pt-3 mt-3" style="border-top:1px solid rgba(255,255,255,0.08);">
