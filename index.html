@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DailyDashboard v46 — bump this (and the matching footer text) by 1 on every future update -->
+<!-- DailyDashboard v47 — bump this (and the matching footer text) by 1 on every future update -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
@@ -156,19 +156,23 @@
 
   @keyframes spin{ from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
   @keyframes itemFadeIn{ from{ opacity:0; transform:translateY(20px); } to{ opacity:1; transform:translateY(0); } }
-  .item-fade-in{ animation:itemFadeIn .8s ease forwards; }
+  .item-fade-in{ animation:itemFadeIn 1s ease forwards; }
   .spinning{ animation:spin 0.9s linear infinite; }
   .ring-progress{ transition:stroke-dashoffset 1s cubic-bezier(.22,1,.36,1); }
   ::-webkit-scrollbar{ width:6px; height:6px; }
   ::-webkit-scrollbar-track{ background:transparent; }
   ::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.15); border-radius:6px; }
   ::-webkit-scrollbar-thumb:hover{ background:rgba(255,255,255,0.25); }
-  html::-webkit-scrollbar-track, body::-webkit-scrollbar-track{ background:#060810; }
-  /* Light mode: applied to EVERY scrollbar, not just html/body — the old
-     version only darkened the page-level track, so every card's own
-     scrollbar (Priority Items, Calendar, Tasks, etc.) was still fully
-     transparent, letting the light card background show straight through
-     and reading as a bright, washed-out bar. */
+  /* Page-level scrollbar hidden entirely — the page is still fully
+     scrollable (touch, trackpad, keyboard, mouse wheel all still work),
+     there's just no visible bar for it. Card-level scrollbars below are
+     untouched and still show normally. */
+  html::-webkit-scrollbar, body::-webkit-scrollbar{ display:none; }
+  html, body{ scrollbar-width:none; -ms-overflow-style:none; }
+  /* Every card-level scrollbar in light mode — this needs the descendant
+     space, since these ARE genuine descendants (unlike html/body above,
+     which no longer need theme-specific track colors now that the page
+     scrollbar is hidden rather than styled). */
   html[data-theme="light"] ::-webkit-scrollbar-track{ background:#e4e7ee; }
   html[data-theme="light"] ::-webkit-scrollbar-thumb{ background:rgba(20,22,35,0.14); }
   html[data-theme="light"] ::-webkit-scrollbar-thumb:hover{ background:rgba(20,22,35,0.22); }
@@ -417,7 +421,7 @@
     </div>
   </section>
 
-  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v46</footer>
+  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v47</footer>
 
 </div>
 
@@ -936,7 +940,7 @@ function renderPriorityItems(emails){
     return;
   }
   card.innerHTML = emails.map((p, i) => `
-    <div class="item-fade-in ${i > 0 ? 'border-t border-white/5 pt-2.5 mt-2.5' : ''}" style="animation-delay:${Math.min(i * 30, 300)}ms">
+    <div class="item-fade-in bg-white/[0.035] border border-white/5 rounded-xl px-3 py-2.5 ${i > 0 ? 'mt-2.5' : ''}" style="animation-delay:${Math.min(i * 30, 300)}ms">
       <span class="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-rose-400/15 text-rose-300">Email</span>
       <div class="text-sm font-semibold text-slate-100 mt-1.5 leading-snug">${escapeHTML(p.subject)}</div>
       <div class="text-xs text-slate-400 mt-0.5 leading-relaxed">From ${escapeHTML(p.from)} · ${escapeHTML(p.date)}</div>
