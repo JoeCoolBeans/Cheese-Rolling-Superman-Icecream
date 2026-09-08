@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DailyDashboard v43 — bump this (and the matching footer text) by 1 on every future update -->
+<!-- DailyDashboard v45 — bump this (and the matching footer text) by 1 on every future update -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
@@ -13,6 +13,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   :root{
+    color-scheme: dark;
     --rim-base:rgba(255,255,255,0.1); --rim-crisp:rgba(255,255,255,0.3); --rim-soft:rgba(255,255,255,0.16); --rim-dim:rgba(0,0,0,0.28);
     --glass-bg:rgba(255,255,255,0.03); --glass-bg-hover:rgba(255,255,255,0.055);
     --glass-border:rgba(255,255,255,0.2); --glass-border-hover:rgba(255,255,255,0.4);
@@ -129,7 +130,7 @@
   .expand-pill{
     height:44px; border-radius:22px; display:flex; align-items:center; overflow:hidden;
     cursor:pointer; width:44px; box-shadow:0 8px 24px rgba(0,0,0,0.35);
-    transition:width .3s cubic-bezier(.22,1,.36,1), background .3s ease, box-shadow .3s ease, border-color .3s ease;
+    transition:width .5s cubic-bezier(.22,1,.36,1), background .5s ease, box-shadow .5s ease, border-color .5s ease;
   }
   /* Hover width is set per-element via --expand-width (computed in JS from
      the actual label text), not a guessed fixed number — otherwise shorter
@@ -154,6 +155,8 @@
   .expand-pill:hover .label{ opacity:1; }
 
   @keyframes spin{ from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+  @keyframes itemFadeIn{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:translateY(0); } }
+  .item-fade-in{ animation:itemFadeIn .4s ease forwards; }
   .spinning{ animation:spin 0.9s linear infinite; }
   .ring-progress{ transition:stroke-dashoffset 1s cubic-bezier(.22,1,.36,1); }
   ::-webkit-scrollbar{ width:6px; height:6px; }
@@ -409,13 +412,13 @@
     </div>
   </section>
 
-  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v43</footer>
+  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v45</footer>
 
 </div>
 
 <script>
 // ================== CONFIGURATION ==================
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwxFWzlXop3x1BLMmjiDsRzYH3x3AgXIXKONblrCBB1_04Rbf-emBGrtTi22KQr6Ctm/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzeU7ZCPb0f-UQGqd0Ho9rORS7rk9bEL0RdU88GKHNcfLuT6SLXCa2XLkRsMucE1Q/exec";
 // Must exactly match the DASHBOARD_KEY Script Property you set in the Apps
 // Script project (Project Settings → Script Properties). Replace this
 // placeholder with your own long random string, not this example one.
@@ -625,9 +628,10 @@ function buildColShell(key){
   return col;
 }
 
-function eventItemHtml(time, title, sub, dotColor){
+function eventItemHtml(time, title, sub, dotColor, index){
   const dot = dotColor ? `<span class="inline-block w-1.5 h-1.5 rounded-full mr-1.5 flex-shrink-0" style="background:${dotColor};"></span>` : '';
-  return `<div class="bg-white/[0.035] border border-white/5 rounded-xl px-3 py-2.5">
+  const delay = typeof index === 'number' ? `style="animation-delay:${Math.min(index * 30, 300)}ms"` : '';
+  return `<div class="item-fade-in bg-white/[0.035] border border-white/5 rounded-xl px-3 py-2.5" ${delay}>
       <div class="text-[11.5px] text-slate-500 tabular-nums">${time}</div>
       <div class="text-[13.5px] text-slate-200 font-medium mt-0.5 flex items-center">${dot}${title}</div>
       ${sub ? `<div class="text-xs text-slate-400 mt-0.5">${sub}</div>` : ''}
@@ -643,11 +647,11 @@ function emptyStateHtml(icon, title, sub){
 }
 
 function taskItemHtml(task, index){
-  return `<div class="bg-white/[0.035] border border-white/5 rounded-xl px-3 py-2.5 flex items-start gap-2.5" data-task-index="${index}">
+  const delay = `style="animation-delay:${Math.min(index * 30, 300)}ms"`;
+  return `<div class="item-fade-in bg-white/[0.035] border border-white/5 rounded-xl px-3 py-2 flex items-start gap-2.5" data-task-index="${index}" ${delay}>
       <button class="task-checkbox w-4 h-4 rounded-md border border-white/25 flex-shrink-0 mt-0.5 flex items-center justify-center hover:border-emerald-300/60 hover:bg-emerald-400/10 transition-all" data-task-index="${index}" title="Mark complete" aria-label="Mark task complete"></button>
       <div class="min-w-0 flex-1">
-        <div class="text-[11.5px] text-slate-500 tabular-nums">${task.date || ''}</div>
-        <div class="text-[13.5px] text-slate-200 font-medium mt-0.5">${escapeHTML(task.title)}</div>
+        <div class="text-[13.5px] text-slate-200 font-medium">${escapeHTML(task.title)}</div>
         ${task.sub ? `<div class="text-xs text-slate-400 mt-0.5">${escapeHTML(task.sub)}</div>` : ''}
       </div>
     </div>`;
@@ -730,7 +734,7 @@ function parseTimeToMinutes(str){
 // slot since they're not time-urgent the way a scheduled item is.
 function nextUpItemHtml(time, title, sub, dotColor){
   const dot = dotColor ? `<span class="inline-block w-2 h-2 rounded-full mr-2 flex-shrink-0" style="background:${dotColor};"></span>` : '';
-  return `<div class="bg-white/[0.05] border rounded-xl px-3.5 py-3" style="border-color:rgba(79,217,199,0.3);">
+  return `<div class="item-fade-in bg-white/[0.05] border rounded-xl px-3.5 py-3" style="border-color:rgba(79,217,199,0.3);">
       <div class="text-[10px] uppercase tracking-widest font-bold" style="color:#4fd9c7;">Next up</div>
       <div class="text-base text-slate-100 font-semibold mt-1 flex items-center">${dot}${title}</div>
       <div class="text-xs text-slate-400 mt-0.5">${time}${sub ? ' · ' + sub : ''}</div>
@@ -778,7 +782,7 @@ function renderCalendarColumn(day){
       const color = CATEGORY_META[ev.category]?.color;
       return i === nextUpIndex
         ? nextUpItemHtml(ev.time || '', ev.title, ev.sub || '', color)
-        : eventItemHtml(ev.time || '', ev.title, ev.sub || '', color);
+        : eventItemHtml(ev.time || '', ev.title, ev.sub || '', color, i);
     }).join('');
   }
 }
@@ -927,7 +931,7 @@ function renderPriorityItems(emails){
     return;
   }
   card.innerHTML = emails.map((p, i) => `
-    <div class="${i > 0 ? 'border-t border-white/5 pt-2.5 mt-2.5' : ''}">
+    <div class="item-fade-in ${i > 0 ? 'border-t border-white/5 pt-2.5 mt-2.5' : ''}" style="animation-delay:${Math.min(i * 30, 300)}ms">
       <span class="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-rose-400/15 text-rose-300">Email</span>
       <div class="text-sm font-semibold text-slate-100 mt-1.5 leading-snug">${escapeHTML(p.subject)}</div>
       <div class="text-xs text-slate-400 mt-0.5 leading-relaxed">From ${escapeHTML(p.from)} · ${escapeHTML(p.date)}</div>
