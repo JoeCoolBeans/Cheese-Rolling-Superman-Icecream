@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DailyDashboard v49 — bump this (and the matching footer text) by 1 on every future update -->
+<!-- DailyDashboard v50 — bump this (and the matching footer text) by 1 on every future update -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
@@ -159,25 +159,16 @@
   .item-fade-in{ animation:itemFadeIn 1s ease forwards; }
   .spinning{ animation:spin 0.9s linear infinite; }
   .ring-progress{ transition:stroke-dashoffset 1s cubic-bezier(.22,1,.36,1); }
-  ::-webkit-scrollbar{ width:6px; height:6px; }
-  ::-webkit-scrollbar-track{ background:transparent; }
-  ::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.15); border-radius:6px; }
-  ::-webkit-scrollbar-thumb:hover{ background:rgba(255,255,255,0.25); }
-  /* Page-level scrollbar hidden entirely — the page is still fully
-     scrollable (touch, trackpad, keyboard, mouse wheel all still work),
-     there's just no visible bar for it. */
-  html::-webkit-scrollbar, body::-webkit-scrollbar{ display:none; }
-  /* Light mode card scrollbars — deliberately kept as minimal and close to
-     the dark-mode structure above as possible (no !important, no mixing in
-     the modern scrollbar-color/scrollbar-width properties alongside these
-     webkit pseudo-elements). Chrome supports both the legacy webkit
-     pseudo-elements and the newer standard properties at the same time,
-     and stacking both for the same element is a real, known source of
-     inconsistent behavior across browser versions — likely exactly what
-     broke this over the last several attempts. */
-  html[data-theme="light"] ::-webkit-scrollbar-track{ background:#e4e7ee; }
-  html[data-theme="light"] ::-webkit-scrollbar-thumb{ background:rgba(20,22,35,0.18); }
-  html[data-theme="light"] ::-webkit-scrollbar-thumb:hover{ background:rgba(20,22,35,0.28); }
+  /* Every scrollbar on the page is hidden entirely — not just the page
+     itself but every card too (Priority Items, Calendar, Tasks, Countdown,
+     Scratchpad). Everything is still fully scrollable through every normal
+     input method (mouse wheel, trackpad, touch, keyboard) — this only
+     removes the visible bar, not the scrolling itself. After a long,
+     inconclusive back-and-forth trying to theme a visible scrollbar
+     consistently across browsers, this trades that cosmetic detail for
+     something that just reliably works everywhere. */
+  ::-webkit-scrollbar{ display:none; }
+  *{ scrollbar-width:none; -ms-overflow-style:none; }
   .daytab{ transition:all .2s ease; }
   /* A clear accent-colored active state instead of a near-invisible tone-
      on-tone overlay — that version wasn't distinct enough in dark mode and
@@ -421,7 +412,7 @@
     </div>
   </section>
 
-  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v49</footer>
+  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v50</footer>
 
 </div>
 
