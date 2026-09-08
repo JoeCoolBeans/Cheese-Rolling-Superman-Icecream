@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DailyDashboard v48 — bump this (and the matching footer text) by 1 on every future update -->
+<!-- DailyDashboard v49 — bump this (and the matching footer text) by 1 on every future update -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
@@ -167,26 +167,17 @@
      scrollable (touch, trackpad, keyboard, mouse wheel all still work),
      there's just no visible bar for it. */
   html::-webkit-scrollbar, body::-webkit-scrollbar{ display:none; }
-  html, body{ scrollbar-width:none; -ms-overflow-style:none; }
-  /* scrollbar-width is an INHERITED property — the html/body rule above
-     could leak its "none" value down into every card's scrollbar too
-     unless something more specific and non-ambiguous wins that fight.
-     Targeting the actual scrollable elements directly (not a broad `*`
-     rule) removes any doubt about whether that override reliably applies
-     in every browser. */
-  #priority-card, #countdown-dots, .overflow-y-auto{ scrollbar-width:thin !important; }
-  html[data-theme="light"] #priority-card,
-  html[data-theme="light"] #countdown-dots,
-  html[data-theme="light"] .overflow-y-auto{ scrollbar-color: rgba(20,22,35,0.14) #e4e7ee !important; }
-  html:not([data-theme="light"]) #priority-card,
-  html:not([data-theme="light"]) #countdown-dots,
-  html:not([data-theme="light"]) .overflow-y-auto{ scrollbar-color: rgba(255,255,255,0.15) transparent !important; }
-  /* Card-level webkit track/thumb colors in light mode. */
+  /* Light mode card scrollbars — deliberately kept as minimal and close to
+     the dark-mode structure above as possible (no !important, no mixing in
+     the modern scrollbar-color/scrollbar-width properties alongside these
+     webkit pseudo-elements). Chrome supports both the legacy webkit
+     pseudo-elements and the newer standard properties at the same time,
+     and stacking both for the same element is a real, known source of
+     inconsistent behavior across browser versions — likely exactly what
+     broke this over the last several attempts. */
   html[data-theme="light"] ::-webkit-scrollbar-track{ background:#e4e7ee; }
-  html[data-theme="light"] ::-webkit-scrollbar-thumb{ background:rgba(20,22,35,0.14); }
-  html[data-theme="light"] ::-webkit-scrollbar-thumb:hover{ background:rgba(20,22,35,0.22); }
-  *{ scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent; }
-  html[data-theme="light"] *{ scrollbar-color: rgba(20,22,35,0.14) #e4e7ee; }
+  html[data-theme="light"] ::-webkit-scrollbar-thumb{ background:rgba(20,22,35,0.18); }
+  html[data-theme="light"] ::-webkit-scrollbar-thumb:hover{ background:rgba(20,22,35,0.28); }
   .daytab{ transition:all .2s ease; }
   /* A clear accent-colored active state instead of a near-invisible tone-
      on-tone overlay — that version wasn't distinct enough in dark mode and
@@ -430,7 +421,7 @@
     </div>
   </section>
 
-  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v48</footer>
+  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v49</footer>
 
 </div>
 
