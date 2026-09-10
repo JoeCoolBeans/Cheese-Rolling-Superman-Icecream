@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DailyDashboard v51 — bump this (and the matching footer text) by 1 on every future update -->
+<!-- DailyDashboard v54 — bump this (and the matching footer text) by 1 on every future update -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
@@ -89,6 +89,23 @@
     pointer-events:none;z-index:0;
   }
   .glass > *{position:relative;z-index:1;}
+  /* Rounds the scrollable content area's own clipping corners — not a
+     visible border/background, purely defines the shape overflow-y:auto
+     clips against, so scrolled content's corners curve slightly instead
+     of clipping at a sharp right angle. Matches rounded-xl (12px), the
+     same radius already used on every subcard inside these lists (event
+     items, task items, priority items), for visual consistency with the
+     content itself rather than a value derived from the outer card. */
+  /* Rounds the scrollable content area's own clipping corners — not a
+     visible border/background, purely defines the shape overflow-y:auto
+     clips against, so scrolled content's corners curve slightly instead
+     of clipping at a sharp right angle. Matches rounded-xl (12px), the
+     same radius already used on every subcard inside these lists (event
+     items, task items, priority items). Deliberately excludes
+     #countdown-dots — that one holds small individual dots, not subcards
+     with their own margin from the edge, and the 12px curve was visibly
+     clipping dots that sit close to a corner. */
+  .overflow-y-auto:not(#countdown-dots){ border-radius:12px; }
   #analog-clock{ width:60px; height:60px; flex-shrink:0; }
   #analog-clock .tick{ stroke:var(--clock-tick); stroke-width:2.4; stroke-linecap:round; }
   #analog-clock .hour-hand{ stroke:var(--clock-hand); stroke-width:2.8; stroke-linecap:round; }
@@ -350,7 +367,7 @@
     <section class="flex flex-col">
       <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-4 ml-1">Priority action items</h2>
       <div class="glass glass-hover rounded-3xl p-5 h-[380px] overflow-hidden">
-        <div id="priority-card" class="h-full overflow-y-auto pr-1"></div>
+        <div id="priority-card" class="h-full overflow-y-auto"></div>
       </div>
     </section>
 
@@ -371,7 +388,7 @@
           <span id="countdown-days-completed" class="text-[11px] text-slate-500 ml-auto"></span>
         </div>
 
-        <div id="countdown-dots" class="flex-1 min-h-0 overflow-y-auto mt-3 flex flex-wrap content-start gap-1.5 pr-1"></div>
+        <div id="countdown-dots" class="flex-1 min-h-0 overflow-y-auto mt-3 flex flex-wrap content-start gap-1.5"></div>
       </div>
     </section>
 
@@ -412,7 +429,7 @@
     </div>
   </section>
 
-  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v51</footer>
+  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v54</footer>
 
 </div>
 
@@ -438,7 +455,7 @@ function loadNotes(){
   try{ ta.value = localStorage.getItem('dashboard-notes') || ''; }catch(e){ ta.value = ''; }
 }
 let notesSaveTimer = null;
-document.getElementById('scratchpad').addEventListener('input', () => {
+document.getElementById('scratchpad').addEventListener('input', (e) => {
   const ind = document.getElementById('save-indicator');
   ind.style.opacity = '0.5';
   clearTimeout(notesSaveTimer);
@@ -623,7 +640,7 @@ function buildColShell(key){
       <div class="text-sm font-semibold">${meta.label}</div>
       <div class="ml-auto text-xs text-slate-500" id="count-${key}"></div>
     </div>
-    <div class="space-y-2.5 overflow-y-auto pr-1 flex-1" id="body-${key}"></div>
+    <div class="space-y-2.5 overflow-y-auto flex-1" id="body-${key}"></div>
     ${quickAddHtml}`;
   return col;
 }
