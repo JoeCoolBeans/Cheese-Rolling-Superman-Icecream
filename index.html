@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DailyDashboard v55 — bump this (and the matching footer text) by 1 on every future update -->
+<!-- DailyDashboard v56 — bump this (and the matching footer text) by 1 on every future update -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
@@ -466,13 +466,13 @@
     </div>
   </section>
 
-  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v55</footer>
+  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v56</footer>
 
 </div>
 
 <script>
 // ================== CONFIGURATION ==================
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzeU7ZCPb0f-UQGqd0Ho9rORS7rk9bEL0RdU88GKHNcfLuT6SLXCa2XLkRsMucE1Q/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwr7IHqC_JhIo4Dy1RfzBDXaeuaMK-3RkOLW3J7g3kOcI7GPpUrBlKcZiCY2TNmulcQ/exec";
 // Must exactly match the DASHBOARD_KEY Script Property you set in the Apps
 // Script project (Project Settings → Script Properties). Replace this
 // placeholder with your own long random string, not this example one.
@@ -644,9 +644,12 @@ function buildColShell(key){
   const meta = columnMeta[key];
   const col = document.createElement('div');
   const isCalendar = key === 'calendar';
+  const isTasks = key === 'tasks';
   col.className = `glass glass-hover rounded-3xl p-5 flex flex-col h-[430px]`;
 
-  const quickAddHtml = !isCalendar ? '' : `
+  let quickAddHtml = '';
+  if(isCalendar){
+    quickAddHtml = `
     <div class="flex-shrink-0 pt-3 mt-3" style="border-top:1px solid rgba(255,255,255,0.08);">
       <div class="flex flex-wrap gap-2 items-center">
         <input id="qa-title" type="text" maxlength="140" placeholder="Add an event…"
@@ -671,6 +674,19 @@ function buildColShell(key){
       </div>
       <div id="qa-status" class="text-[11px] mt-1.5 min-h-[14px] px-1"></div>
     </div>`;
+  } else if(isTasks){
+    quickAddHtml = `
+    <div class="flex-shrink-0 pt-3 mt-3" style="border-top:1px solid rgba(255,255,255,0.08);">
+      <div class="flex flex-wrap gap-2 items-center">
+        <input id="ta-title" type="text" maxlength="140" placeholder="Add a task…"
+          class="h-8 leading-8 flex-1 min-w-[120px] bg-white/5 border border-white/10 rounded-lg px-3 text-xs text-slate-200 outline-none focus:border-white/30">
+        <input id="ta-date" type="date"
+          class="h-8 bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
+        <button id="ta-submit" class="h-8 leading-8 text-xs px-3 rounded-lg bg-emerald-400/15 border border-emerald-300/30 text-emerald-300 font-semibold hover:bg-emerald-400/25 transition-all whitespace-nowrap">Add</button>
+      </div>
+      <div id="ta-status" class="text-[11px] mt-1.5 min-h-[14px] px-1"></div>
+    </div>`;
+  }
 
   col.innerHTML = `<div class="flex items-center gap-2.5 mb-3 flex-shrink-0">
       <div class="icon-badge w-6 h-6 rounded-lg flex items-center justify-center p-1" style="background:${meta.dim};color:${meta.color};">${meta.icon}</div>
@@ -1203,7 +1219,7 @@ function initQuickAddDefaults(){
 // Clicking anywhere in a date/time box opens its native picker, not just
 // the small icon. showPicker() is supported in current Chrome/Edge; browsers
 // without it just fall back to normal click-to-focus behavior.
-['qa-date', 'qa-start', 'qa-end'].forEach(id => {
+['qa-date', 'qa-start', 'qa-end', 'ta-date'].forEach(id => {
   const el = document.getElementById(id);
   el.addEventListener('click', () => {
     if(typeof el.showPicker === 'function'){
@@ -1273,7 +1289,52 @@ document.getElementById('qa-submit').addEventListener('click', async () => {
     statusEl.className = 'text-[11px] mt-2.5 min-h-[16px] text-rose-400';
   }finally{
     btn.disabled = false;
-    btn.textContent = 'Create event';
+    btn.textContent = 'Add';
+  }
+});
+
+document.getElementById('ta-submit').addEventListener('click', async () => {
+  const statusEl = document.getElementById('ta-status');
+  const btn = document.getElementById('ta-submit');
+  const title = document.getElementById('ta-title').value.trim();
+  const due = document.getElementById('ta-date').value; // optional — Tasks don't require a due date
+
+  if(!title){
+    statusEl.textContent = 'Title is required.';
+    statusEl.className = 'text-[11px] mt-1.5 min-h-[14px] text-rose-400';
+    return;
+  }
+
+  const payload = { action: 'createTask', title: title, key: DASHBOARD_KEY };
+  if(due) payload.due = due;
+
+  btn.disabled = true;
+  btn.textContent = 'Adding…';
+  statusEl.textContent = '';
+
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    const result = await res.json();
+    if(result.success){
+      statusEl.textContent = `"${title}" added.`;
+      statusEl.className = 'text-[11px] mt-1.5 min-h-[14px] text-emerald-400';
+      document.getElementById('ta-title').value = '';
+      document.getElementById('ta-date').value = '';
+      refreshAll();
+    } else {
+      statusEl.textContent = `Failed: ${result.error || 'unknown error'}`;
+      statusEl.className = 'text-[11px] mt-1.5 min-h-[14px] text-rose-400';
+    }
+  }catch(err){
+    statusEl.textContent = `Request failed: ${err.message}`;
+    statusEl.className = 'text-[11px] mt-1.5 min-h-[14px] text-rose-400';
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Add';
   }
 });
 
