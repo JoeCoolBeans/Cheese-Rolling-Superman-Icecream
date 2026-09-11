@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DailyDashboard v54 — bump this (and the matching footer text) by 1 on every future update -->
+<!-- DailyDashboard v55 — bump this (and the matching footer text) by 1 on every future update -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
@@ -212,6 +212,43 @@
   html[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator,
   html[data-theme="light"] input[type="time"]::-webkit-calendar-picker-indicator{
     filter: invert(0.35);
+  }
+  /* "All day" checkbox — fully custom-drawn (appearance:none) rather than
+     relying on background-color to style native checkbox rendering, which
+     browsers don't reliably respect the same way they do for a plain div.
+     This was the actual cause of the light-mode "bright white" checkbox —
+     the bg-white/5 light-mode override genuinely was being applied, native
+     checkbox chrome just wasn't fully honoring it. */
+  #qa-allday{
+    appearance: none; -webkit-appearance: none;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+  }
+  #qa-allday:checked{
+    background: rgba(79,217,199,0.25);
+    border-color: rgba(79,217,199,0.6);
+  }
+  #qa-allday:checked::after{
+    content: "";
+    position: absolute; left: 4px; top: 1px;
+    width: 4px; height: 8px;
+    border: solid #4fd9c7; border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  html[data-theme="light"] #qa-allday{
+    background: rgba(20,22,35,0.045);
+    border-color: rgba(20,22,35,0.16);
+  }
+  html[data-theme="light"] #qa-allday:checked{
+    background: rgba(79,217,199,0.2);
+    border-color: rgba(15,122,92,0.6);
+  }
+  html[data-theme="light"] #qa-allday:checked::after{
+    border-color: #0f7a5c;
   }
   input[type="date"]:hover::-webkit-calendar-picker-indicator,
   input[type="time"]:hover::-webkit-calendar-picker-indicator{
@@ -429,7 +466,7 @@
     </div>
   </section>
 
-  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v54</footer>
+  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v55</footer>
 
 </div>
 
@@ -622,7 +659,7 @@ function buildColShell(key){
           <input id="qa-end" type="time" class="h-8 w-[86px] bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
         </div>
         <label class="h-8 flex items-center gap-1 text-[11px] text-slate-400 cursor-pointer whitespace-nowrap">
-          <input id="qa-allday" type="checkbox" class="rounded border-white/20 bg-white/5 w-3.5 h-3.5">
+          <input id="qa-allday" type="checkbox" class="w-3.5 h-3.5">
           All day
         </label>
         <select id="qa-calendar" class="h-8 bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-300 outline-none focus:border-white/30 cursor-pointer">
