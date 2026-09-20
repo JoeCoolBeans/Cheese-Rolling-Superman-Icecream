@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DailyDashboard v56 — bump this (and the matching footer text) by 1 on every future update -->
+<!-- DailyDashboard v60 — bump this (and the matching footer text) by 1 on every future update -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
@@ -186,11 +186,12 @@
      something that just reliably works everywhere. */
   ::-webkit-scrollbar{ display:none; }
   *{ scrollbar-width:none; -ms-overflow-style:none; }
-  .daytab{ transition:all .2s ease; }
-  /* A clear accent-colored active state instead of a near-invisible tone-
-     on-tone overlay — that version wasn't distinct enough in dark mode and
-     rendered inconsistently in light mode, so one rule now covers both. */
-  .daytab.active{ font-weight:700; color:var(--text-primary); }
+  .daytab{ transition:color .2s ease; color:#8b93a5; }
+  /* Text color now signals which tab is active alongside the sliding pill
+     background — replacing a previous rule that referenced an undefined
+     CSS variable (var(--text-primary), never actually declared anywhere
+     in this file) and so silently had no effect. */
+  .daytab.active{ color:#6ee7d3; }
 
   /* Date/time inputs: use the browser's built-in theme (matching light/dark
      mode) for the native picker popup — CSS can't restyle that popup
@@ -392,15 +393,11 @@
   <!-- Schedule -->
   <section>
     <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-4 ml-1">Schedule</h2>
-    <div class="flex gap-2 mb-4">
-      <button class="daytab active px-4 py-2 rounded-full text-sm font-medium glass" data-day="today">Today</button>
-      <button class="daytab px-4 py-2 rounded-full text-sm font-medium glass" data-day="tomorrow">Tomorrow</button>
-    </div>
     <div class="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-4" id="schedule-grid"></div>
   </section>
 
   <!-- Priority action items / Recent Drive files / Scratchpad -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div class="grid grid-cols-1 md:grid-cols-[5fr_4fr_3fr] gap-4">
     <section class="flex flex-col">
       <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-4 ml-1">Priority action items</h2>
       <div class="glass glass-hover rounded-3xl p-5 h-[380px] overflow-hidden">
@@ -451,22 +448,7 @@
     </section>
   </div>
 
-  <!-- Quick launch -->
-  <section>
-    <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-4 ml-1">Quick launch</h2>
-    <div class="glass glass-hover rounded-3xl p-5">
-      <div class="flex gap-2 mb-3">
-        <input id="launch-name-input" type="text" maxlength="24" placeholder="Name (e.g. Spotify)"
-          class="w-32 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-white/30">
-        <input id="launch-url-input" type="text" placeholder="URL or app:// link"
-          class="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none focus:border-white/30">
-        <button id="launch-add" class="text-xs px-3 rounded-lg bg-emerald-400/15 border border-emerald-300/30 text-emerald-300 font-semibold hover:bg-emerald-400/25 transition-all flex-shrink-0">Add</button>
-      </div>
-      <div id="launch-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2"></div>
-    </div>
-  </section>
-
-  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v56</footer>
+  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v60</footer>
 
 </div>
 
@@ -645,7 +627,7 @@ function buildColShell(key){
   const col = document.createElement('div');
   const isCalendar = key === 'calendar';
   const isTasks = key === 'tasks';
-  col.className = `glass glass-hover rounded-3xl p-5 flex flex-col h-[430px]`;
+  col.className = `glass glass-hover rounded-3xl p-5 flex flex-col h-[400px]`;
 
   let quickAddHtml = '';
   if(isCalendar){
@@ -657,9 +639,9 @@ function buildColShell(key){
         <input id="qa-date" type="date"
           class="h-8 bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
         <div id="qa-time-fields" class="flex items-center gap-1">
-          <input id="qa-start" type="time" class="h-8 w-[86px] bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
+          <input id="qa-start" type="time" step="900" class="h-8 w-[98px] bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
           <span class="text-slate-600 text-xs">–</span>
-          <input id="qa-end" type="time" class="h-8 w-[86px] bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
+          <input id="qa-end" type="time" step="900" class="h-8 w-[98px] bg-white/5 border border-white/10 rounded-lg px-2 text-xs text-slate-200 outline-none focus:border-white/30 cursor-pointer">
         </div>
         <label class="h-8 flex items-center gap-1 text-[11px] text-slate-400 cursor-pointer whitespace-nowrap">
           <input id="qa-allday" type="checkbox" class="w-3.5 h-3.5">
@@ -688,10 +670,18 @@ function buildColShell(key){
     </div>`;
   }
 
+  const dayToggleHtml = !isCalendar ? '' : `
+    <div class="relative inline-flex bg-white/5 rounded-full p-0.5 ml-2.5" id="daytab-toggle">
+      <div id="daytab-slider" class="absolute top-0.5 bottom-0.5 rounded-full bg-emerald-400/20 transition-all duration-300 ease-out"></div>
+      <button class="daytab active relative z-10 px-2.5 py-1 text-[11px] font-medium rounded-full transition-colors duration-300" data-day="today">Today</button>
+      <button class="daytab relative z-10 px-2.5 py-1 text-[11px] font-medium rounded-full transition-colors duration-300" data-day="tomorrow">Tomorrow</button>
+    </div>`;
+
   col.innerHTML = `<div class="flex items-center gap-2.5 mb-3 flex-shrink-0">
       <div class="icon-badge w-6 h-6 rounded-lg flex items-center justify-center p-1" style="background:${meta.dim};color:${meta.color};">${meta.icon}</div>
       <div class="text-sm font-semibold">${meta.label}</div>
       <div class="ml-auto text-xs text-slate-500" id="count-${key}"></div>
+      ${dayToggleHtml}
     </div>
     <div class="space-y-2.5 overflow-y-auto flex-1" id="body-${key}"></div>
     ${quickAddHtml}`;
@@ -718,10 +708,10 @@ function emptyStateHtml(icon, title, sub){
 
 function taskItemHtml(task, index){
   const delay = `style="animation-delay:${Math.min(index * 30, 300)}ms"`;
-  return `<div class="item-fade-in bg-white/[0.035] border border-white/5 rounded-xl px-3 py-2 flex items-start gap-2.5" data-task-index="${index}" ${delay}>
+  return `<div class="task-row item-fade-in bg-white/[0.035] border border-white/5 rounded-xl px-3 py-2 flex items-start gap-2.5" data-task-index="${index}" ${delay}>
       <button class="task-checkbox w-4 h-4 rounded-md border border-white/25 flex-shrink-0 mt-0.5 flex items-center justify-center hover:border-emerald-300/60 hover:bg-emerald-400/10 transition-all" data-task-index="${index}" title="Mark complete" aria-label="Mark task complete"></button>
       <div class="min-w-0 flex-1">
-        <div class="text-[13.5px] text-slate-200 font-medium">${escapeHTML(task.title)}</div>
+        <div class="task-title text-[13.5px] text-slate-200 font-medium">${escapeHTML(task.title)}</div>
         ${task.sub ? `<div class="text-xs text-slate-400 mt-0.5">${escapeHTML(task.sub)}</div>` : ''}
       </div>
     </div>`;
@@ -742,33 +732,50 @@ function renderTasksColumn(){
   body.querySelectorAll('.task-checkbox').forEach(btn => {
     btn.addEventListener('click', () => {
       const i = parseInt(btn.dataset.taskIndex, 10);
-      completeTaskAction(i);
+      const rowEl = btn.closest('.task-row');
+      completeTaskAction(i, rowEl);
     });
   });
 }
 
-// Optimistic UI: the task disappears from the list immediately on click
-// rather than waiting for the network round-trip, since this should feel
-// instant. If the server call actually fails, it's put back and an error
-// shown — quietly, since a failed checkbox click isn't worth interrupting
-// someone over, but it shouldn't just silently lose the click either.
-async function completeTaskAction(index){
+// The actual completion request fires immediately in the background — it
+// doesn't wait on the animation below, so the real data change isn't
+// delayed by it. The animation is purely a visual confirmation beat: the
+// checkbox fills and the title strikes through right away, holds briefly
+// so that registers, then the row fades out — instead of the row just
+// vanishing the instant you click, which felt too abrupt.
+async function completeTaskAction(index, rowEl){
   const task = liveIncompleteTasks[index];
   if(!task || !task.taskId || !task.tasklistId){
     console.error('Task is missing taskId/tasklistId — cannot complete it.', task);
     return;
   }
 
+  if(rowEl){
+    const checkbox = rowEl.querySelector('.task-checkbox');
+    if(checkbox){ checkbox.style.background = 'rgba(52,211,153,0.35)'; checkbox.style.borderColor = 'rgba(52,211,153,0.7)'; }
+    const titleEl = rowEl.querySelector('.task-title');
+    if(titleEl){ titleEl.style.textDecoration = 'line-through'; titleEl.style.color = '#64748b'; }
+  }
+
+  const requestPromise = fetch(GOOGLE_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'completeTask', taskId: task.taskId, tasklistId: task.tasklistId, key: DASHBOARD_KEY })
+  }).then(r => r.json());
+
+  await new Promise(r => setTimeout(r, 450));
+  if(rowEl){
+    rowEl.style.transition = 'opacity .35s ease';
+    rowEl.style.opacity = '0';
+    await new Promise(r => setTimeout(r, 350));
+  }
+
   liveIncompleteTasks = liveIncompleteTasks.filter((_, i) => i !== index);
   renderTasksColumn();
 
   try{
-    const res = await fetch(GOOGLE_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'completeTask', taskId: task.taskId, tasklistId: task.tasklistId, key: DASHBOARD_KEY })
-    });
-    const data = await res.json();
+    const data = await requestPromise;
     if(!data.success){
       throw new Error(data.error || 'Unknown error completing task.');
     }
@@ -866,11 +873,21 @@ function initScheduleShell(){
   renderTasksColumn();
 }
 initScheduleShell();
+positionDaySlider();
+
+function positionDaySlider(){
+  const slider = document.getElementById('daytab-slider');
+  const activeTab = document.querySelector('.daytab.active');
+  if(!slider || !activeTab) return;
+  slider.style.left = activeTab.offsetLeft + 'px';
+  slider.style.width = activeTab.offsetWidth + 'px';
+}
 
 document.querySelectorAll('.daytab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.daytab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
+    positionDaySlider();
     activeDay = tab.dataset.day;
     renderCalendarColumn(activeDay);
   });
@@ -1162,50 +1179,6 @@ document.getElementById('theme-toggle').addEventListener('click', () => {
   try{ localStorage.setItem('dashboard-theme', next); }catch(e){}
 });
 
-// ================== QUICK LAUNCH ==================
-const defaultLaunchers = [
-  {id:'l1', name:'Gmail', url:'https://mail.google.com'},
-  {id:'l2', name:'Calendar', url:'https://calendar.google.com'},
-  {id:'l3', name:'Drive', url:'https://drive.google.com'},
-  {id:'l4', name:'YouTube Music', url:'https://music.youtube.com'}
-];
-let launchers = [];
-function loadLaunchers(){
-  try{ const raw = localStorage.getItem('dashboard-launchers'); launchers = raw ? JSON.parse(raw) : defaultLaunchers; }
-  catch(e){ launchers = defaultLaunchers; }
-  renderLaunchers();
-}
-function saveLaunchers(){ try{ localStorage.setItem('dashboard-launchers', JSON.stringify(launchers)); }catch(e){ console.error(e); } }
-function renderLaunchers(){
-  const grid = document.getElementById('launch-grid');
-  if(launchers.length === 0){
-    grid.innerHTML = '<div class="col-span-full text-center text-slate-500 text-xs py-4">No shortcuts yet — add one above.</div>';
-    return;
-  }
-  grid.innerHTML = launchers.map(l => `
-    <div class="relative group">
-      <a href="${l.url}" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center text-center px-3 py-3 rounded-xl bg-white/5 border border-white/10 hover:border-white/30 hover:bg-white/10 transition-all text-xs font-medium text-slate-200 truncate" title="${l.url}">
-        ${escapeHTML(l.name)}
-      </a>
-      <button class="launch-del absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-slate-800 border border-white/20 text-slate-400 opacity-0 group-hover:opacity-100 hover:text-rose-300 transition-all flex items-center justify-center text-[10px] leading-none" data-id="${l.id}">✕</button>
-    </div>`).join('');
-
-  grid.querySelectorAll('.launch-del').forEach(btn => btn.addEventListener('click', () => {
-    launchers = launchers.filter(l => l.id !== btn.dataset.id);
-    renderLaunchers(); saveLaunchers();
-  }));
-}
-document.getElementById('launch-add').addEventListener('click', () => {
-  const nameInput = document.getElementById('launch-name-input');
-  const urlInput = document.getElementById('launch-url-input');
-  const name = nameInput.value.trim();
-  const url = urlInput.value.trim();
-  if(!name || !url) return;
-  launchers.push({id:'l'+Date.now(), name, url});
-  nameInput.value = ''; urlInput.value = '';
-  renderLaunchers(); saveLaunchers();
-});
-
 // ================== QUICK ADD EVENT ==================
 function initQuickAddDefaults(){
   const dateInput = document.getElementById('qa-date');
@@ -1231,6 +1204,19 @@ function initQuickAddDefaults(){
 document.getElementById('qa-allday').addEventListener('change', (e) => {
   document.getElementById('qa-time-fields').classList.toggle('hidden', e.target.checked);
 });
+
+// A success confirmation ("Task added", "Event created") fades out on its
+// own after a few seconds rather than sitting there indefinitely — error
+// messages are left alone since those still need your attention.
+function fadeOutStatus(el, delay = 2800){
+  clearTimeout(el._fadeTimer);
+  el.style.transition = 'opacity .6s ease';
+  el.style.opacity = '1';
+  el._fadeTimer = setTimeout(() => {
+    el.style.opacity = '0';
+    setTimeout(() => { el.textContent = ''; }, 650);
+  }, delay);
+}
 
 document.getElementById('qa-submit').addEventListener('click', async () => {
   const statusEl = document.getElementById('qa-status');
@@ -1276,6 +1262,7 @@ document.getElementById('qa-submit').addEventListener('click', async () => {
     if(result.success){
       statusEl.textContent = `"${title}" created.`;
       statusEl.className = 'text-[11px] mt-2.5 min-h-[16px] text-emerald-400';
+      fadeOutStatus(statusEl);
       document.getElementById('qa-title').value = '';
       document.getElementById('qa-start').value = '';
       document.getElementById('qa-end').value = '';
@@ -1322,6 +1309,7 @@ document.getElementById('ta-submit').addEventListener('click', async () => {
     if(result.success){
       statusEl.textContent = `"${title}" added.`;
       statusEl.className = 'text-[11px] mt-1.5 min-h-[14px] text-emerald-400';
+      fadeOutStatus(statusEl);
       document.getElementById('ta-title').value = '';
       document.getElementById('ta-date').value = '';
       refreshAll();
@@ -1360,7 +1348,6 @@ function fitExpandPill(el, text){
 fitExpandPill(document.getElementById('refresh-btn'), 'Refresh'); // static label, only needs setting once
 loadTheme();
 loadNotes();
-loadLaunchers();
 loadCountdown();
 initQuickAddDefaults();
 refreshAll();
