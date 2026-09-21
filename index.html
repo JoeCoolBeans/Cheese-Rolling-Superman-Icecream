@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DailyDashboard v60 — bump this (and the matching footer text) by 1 on every future update -->
+<!-- DailyDashboard v65 — bump this (and the matching footer text) by 1 on every future update -->
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
@@ -27,7 +27,7 @@
     --rim-base:rgba(20,22,35,0.06); --rim-crisp:rgba(255,255,255,0.8); --rim-soft:rgba(255,255,255,0.55); --rim-dim:rgba(20,22,35,0.1);
     --glass-bg:rgba(255,255,255,0.3); --glass-bg-hover:rgba(255,255,255,0.46);
     --glass-border:rgba(20,22,35,0.12); --glass-border-hover:rgba(20,22,35,0.22);
-    --sheen:rgba(255,255,255,0.6); --grid-line:rgba(20,22,35,0.07);
+    --sheen:rgba(255,255,255,0.6); --grid-line:rgba(20,22,35,0.16);
     --outer-shadow:rgba(30,34,60,0.12); --outer-shadow-hover:rgba(30,34,60,0.18);
     --icon-badge-bg:rgba(79,217,199,0.14);
     --clock-tick:rgba(20,22,35,0.5); --clock-hand:#14161f;
@@ -296,6 +296,11 @@
 </head>
 <body class="min-h-screen text-slate-100 px-2 py-3 md:px-3 md:py-5 relative overflow-x-hidden">
 
+<!-- Liquid glass refraction — filters generated and appended here at
+     runtime, one per glass card. Chrome/Chromium only; on unsupported
+     browsers this stays empty and every card keeps its plain-blur glass. -->
+<svg width="0" height="0" style="position:absolute;"><defs id="refraction-defs"></defs></svg>
+
 <div class="grid-overlay"></div>
 <div class="orb orb1"></div>
 <div class="orb orb2"></div>
@@ -400,14 +405,14 @@
   <div class="grid grid-cols-1 md:grid-cols-[5fr_4fr_3fr] gap-4">
     <section class="flex flex-col">
       <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-4 ml-1">Priority action items</h2>
-      <div class="glass glass-hover rounded-3xl p-5 h-[380px] overflow-hidden">
+      <div class="glass glass-hover rounded-3xl p-5 h-[380px] overflow-hidden" id="priority-outer-card">
         <div id="priority-card" class="h-full overflow-y-auto"></div>
       </div>
     </section>
 
     <section class="flex flex-col">
       <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-4 ml-1">Countdown</h2>
-      <div class="glass glass-hover rounded-3xl p-5 h-[380px] flex flex-col overflow-hidden">
+      <div class="glass glass-hover rounded-3xl p-5 h-[380px] flex flex-col overflow-hidden" id="countdown-outer-card">
         <input id="countdown-title" type="text" maxlength="60" placeholder="Countdown title…"
           class="bg-transparent border-0 border-b border-white/10 focus:border-white/30 outline-none text-base font-semibold text-slate-100 placeholder-slate-600 pb-1.5 flex-shrink-0">
 
@@ -428,7 +433,7 @@
 
     <section class="flex flex-col">
       <h2 class="text-xs uppercase tracking-widest text-slate-500 font-semibold mb-4 ml-1">Scratchpad</h2>
-      <div class="glass glass-hover rounded-3xl p-5 h-[380px] flex flex-col">
+      <div class="glass glass-hover rounded-3xl p-5 h-[380px] flex flex-col" id="scratchpad-outer-card">
         <div class="flex justify-between items-center mb-2 flex-shrink-0">
           <span class="text-[11px] text-slate-500">Autosaves as you type</span>
           <span id="save-indicator" class="text-[11px] text-slate-500 flex items-center gap-1.5 transition-opacity duration-300">
@@ -448,7 +453,7 @@
     </section>
   </div>
 
-  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v60</footer>
+  <footer class="text-center text-xs text-slate-600 pb-2">Connected to your Google Apps Script & Open-Meteo · auto-refreshes every 15 minutes · DailyDashboard v65</footer>
 
 </div>
 
@@ -628,6 +633,7 @@ function buildColShell(key){
   const isCalendar = key === 'calendar';
   const isTasks = key === 'tasks';
   col.className = `glass glass-hover rounded-3xl p-5 flex flex-col h-[400px]`;
+  col.id = `${key}-outer-card`;
 
   let quickAddHtml = '';
   if(isCalendar){
@@ -1343,6 +1349,304 @@ function fitExpandPill(el, text){
   const total = Math.ceil(iconWidth + textWidth + labelPadRight + safetyBuffer);
   el.style.setProperty('--expand-width', total + 'px');
 }
+
+// ================== LIQUID GLASS REFRACTION ==================
+// Chrome/Chromium only — SVG filters used as backdrop-filter aren't
+// supported in Safari or Firefox (including the iOS PWA install). On
+// those, this whole block quietly does nothing and every card keeps its
+// existing plain blur-only glass, unchanged — not a broken fallback, the
+// same appearance the dashboard already had before this was added.
+const REFRACTION_SUPPORTED = (() => {
+  try { return CSS.supports('backdrop-filter', 'url(#test)'); }
+  catch(e){ return false; }
+})();
+
+// Generates a displacement map matching the element's rounded-rect shape
+// at its OWN actual pixel size. Pixels within `edgeWidth` of the edge get
+// pushed inward with a falloff curve approximating a convex squircle
+// bezel; the interior stays neutral (128,128 = no displacement). O(w×h) —
+// this is the expensive part, which is why it only re-runs on genuine
+// size changes, not on every hover.
+// Directional edge glow — bright top-left, dark bottom-right, computed
+// per-pixel from actual Fresnel reflectance (Schlick's approximation)
+// rather than a hand-placed gradient. Settled on through direct
+// comparison: 45px edge band, 30% peak intensity, dark side at 55% of
+// the bright side's strength. Renders as WHITE (bright half) or BLACK
+// (dark half) with alpha carrying the actual reflectance-derived
+// brightness — meant to sit BEHIND the crisp box-shadow rim (added
+// separately as its own higher-z-index layer), not stacked underneath a
+// child element that would paint over it and look pixelated.
+function generateGlowMap(w, h, radius, edgeWidth, intensityPct){
+  const F0 = 0.04;
+  const intensityScale = intensityPct / 100;
+  const darkRatio = 0.55;
+  const W = Math.max(1, Math.round(w));
+  const H = Math.max(1, Math.round(h));
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  const imgData = ctx.createImageData(W, H);
+  const data = imgData.data;
+  for(let py = 0; py < H; py++){
+    for(let px = 0; px < W; px++){
+      const idx = (py * W + px) * 4;
+      const cornerX = Math.min(px, W - 1 - px);
+      const cornerY = Math.min(py, H - 1 - py);
+      let dist;
+      if(cornerX < radius && cornerY < radius){
+        const cdx = radius - cornerX, cdy = radius - cornerY;
+        dist = radius - Math.sqrt(cdx * cdx + cdy * cdy);
+      } else {
+        dist = Math.min(cornerX, cornerY);
+      }
+      let reflectance = F0;
+      if(dist >= 0 && dist < edgeWidth){
+        const t = dist / edgeWidth;
+        const angleDeg = 90 * Math.pow(1 - t, 0.7);
+        const cosTheta = Math.cos(angleDeg * Math.PI / 180);
+        reflectance = F0 + (1 - F0) * Math.pow(1 - cosTheta, 5);
+      }
+      const diag = ((1 - px / (W - 1)) + (1 - py / (H - 1))) - 1;
+      let brightness, isBrightSide;
+      if(diag >= 0){
+        isBrightSide = true;
+        brightness = reflectance * 255 * intensityScale * diag;
+      } else {
+        isBrightSide = false;
+        brightness = reflectance * 255 * intensityScale * (-diag) * darkRatio;
+      }
+      brightness = Math.max(0, Math.min(255, brightness));
+      if(isBrightSide){ data[idx] = 255; data[idx+1] = 255; data[idx+2] = 255; }
+      else { data[idx] = 0; data[idx+1] = 0; data[idx+2] = 0; }
+      data[idx+3] = Math.round(brightness);
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
+  return canvas.toDataURL();
+}
+
+function generateDisplacementMap(w, h, radius, edgeWidth){
+  const W = Math.max(1, Math.round(w));
+  const H = Math.max(1, Math.round(h));
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  const imgData = ctx.createImageData(W, H);
+  const data = imgData.data;
+
+  for(let py = 0; py < H; py++){
+    for(let px = 0; px < W; px++){
+      const idx = (py * W + px) * 4;
+      const cornerX = Math.min(px, W - 1 - px);
+      const cornerY = Math.min(py, H - 1 - py);
+      let dist, nx = 0, ny = 0;
+      if(cornerX < radius && cornerY < radius){
+        const cdx = radius - cornerX;
+        const cdy = radius - cornerY;
+        const cornerDist = radius - Math.sqrt(cdx * cdx + cdy * cdy);
+        dist = cornerDist;
+        const len = Math.sqrt(cdx * cdx + cdy * cdy) || 1;
+        nx = (px < W / 2 ? 1 : -1) * (cdx / len);
+        ny = (py < H / 2 ? 1 : -1) * (cdy / len);
+      } else {
+        dist = Math.min(cornerX, cornerY);
+        if(cornerX < cornerY){ nx = (px < W / 2 ? 1 : -1); }
+        else { ny = (py < H / 2 ? 1 : -1); }
+      }
+      if(dist >= edgeWidth || dist < 0){
+        data[idx] = 128; data[idx+1] = 128; data[idx+2] = 128; data[idx+3] = 255;
+      } else {
+        const t = dist / edgeWidth;
+        const magnitude = Math.pow(1 - t, 1.6);
+        data[idx]   = Math.max(0, Math.min(255, 128 + nx * magnitude * 127));
+        data[idx+1] = Math.max(0, Math.min(255, 128 + ny * magnitude * 127));
+        data[idx+2] = 128;
+        data[idx+3] = 255;
+      }
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
+  return canvas.toDataURL();
+}
+
+// Applies real refraction to one glass card, given its element id.
+//   restScale / hoverScale — displacement strength at rest vs on hover
+//   hasHoverLift — whether to animate scale on hover at all (cards that
+//     lift on hover get this; elements with no comparable hover motion
+//     can skip it and just sit at restScale permanently)
+//   edgePct — edge band width as a fraction of the element's shorter
+//     side (0.07 = the community-documented default, validated against
+//     a fixed-px alternative in testing — proportional held up better
+//     across the dashboard's differently-sized cards)
+let refractionCounter = 0;
+function initRefraction(elId, opts = {}){
+  if(!REFRACTION_SUPPORTED) return;
+  const el = document.getElementById(elId);
+  if(!el) return;
+
+  const restScale = opts.restScale ?? 14;
+  const hoverScale = opts.hoverScale ?? 58;
+  const hasHoverLift = opts.hasHoverLift !== false;
+  const edgePct = opts.edgePct ?? 0.07;
+
+  const id = 'lr' + (refractionCounter++);
+  const filterId = 'liquid-refract-' + id;
+  const svgNS = 'http://www.w3.org/2000/svg';
+
+  const filterEl = document.createElementNS(svgNS, 'filter');
+  filterEl.setAttribute('id', filterId);
+  // Reverted to -20%/140% — the value actually confirmed to look right in
+  // testing (card 1 of the transparency diagnostic). The wider -40%/180%
+  // region tried afterward sampled undefined space beyond the
+  // displacement map's actual coverage, which SVG treats as transparent
+  // black (R=0,G=0 = maximum possible displacement, wrong direction) —
+  // that ring of bad data around every card's edge is what was actually
+  // making things look muddier, not the CSS-rule change that fixed the
+  // original hover flicker (that part stays, these are separable).
+  filterEl.setAttribute('x', '-20%'); filterEl.setAttribute('y', '-20%');
+  filterEl.setAttribute('width', '140%'); filterEl.setAttribute('height', '140%');
+  filterEl.setAttribute('color-interpolation-filters', 'sRGB');
+  const feImage = document.createElementNS(svgNS, 'feImage');
+  feImage.setAttribute('result', 'dm-' + id);
+  // x/y explicitly set to 0 here — the working demo's static markup always
+  // declared these explicitly; this dynamic version omitted them, relying
+  // on the spec's default. That gap is the likely cause of the map
+  // appearing offset from the card's actual top-left corner.
+  feImage.setAttribute('x', '0');
+  feImage.setAttribute('y', '0');
+  const feDisp = document.createElementNS(svgNS, 'feDisplacementMap');
+  feDisp.setAttribute('in', 'SourceGraphic');
+  feDisp.setAttribute('in2', 'dm-' + id);
+  feDisp.setAttribute('xChannelSelector', 'R');
+  feDisp.setAttribute('yChannelSelector', 'G');
+  feDisp.setAttribute('scale', restScale);
+  filterEl.appendChild(feImage);
+  filterEl.appendChild(feDisp);
+  document.getElementById('refraction-defs').appendChild(filterEl);
+
+  // backdrop-filter set via an injected <style> rule keyed to the
+  // element's own id — NOT an inline style. An inline value would fight
+  // the existing .glass/.glass-hover:hover CSS transition for the same
+  // property (confirmed during testing to cause a flicker right at the
+  // hover boundary); an ID-selector rule naturally outranks that class
+  // rule in specificity without needing !important, and participates in
+  // the same transition system instead of overriding it from outside.
+  //
+  // blur is a flat 2px — NOT the rest of the app's usual 24px/34px glass
+  // blur. That heavier blur was never actually part of the setup that was
+  // tested and confirmed to look transparent; it got pulled in later when
+  // this was rewritten as a CSS rule, on the assumption that matching the
+  // rest of the app's glass system was the right call. It wasn't — 24px
+  // is a lot of blur, and it was smoothing the refraction into a hazy,
+  // less transparent-looking surface regardless of the alpha underneath.
+  // blur also doesn't change on hover here, matching the original —
+  // scale (below) is the only thing hover actually animates.
+  const styleEl = document.createElement('style');
+  styleEl.textContent = `
+    #${elId}{ backdrop-filter:url(#${filterId}) blur(2px); -webkit-backdrop-filter:url(#${filterId}) blur(2px); }
+    /* The shared .glass-hover:hover rule also does scale(1.015) — a pure
+       CSS visual transform that never changes the element's actual layout
+       size, which means the ResizeObserver below (watching for genuine
+       size changes to know when to regenerate the map) never fires for
+       it. The displacement map stays sized for the resting dimensions
+       while the element visually renders slightly larger during the
+       scaled hover state, and that mismatch between "where the filter
+       thinks the edge is" and "where the edge now visually is" is what
+       shows up as a faint square-within-a-square seam, worst right as
+       the scale kicks in. Overriding transform here (this ID selector
+       already outranks the class rule) drops just the scale, keeping the
+       translateY lift — which doesn't resize anything, so there's
+       nothing left to mismatch. */
+    #${elId}.glass-hover:hover{ transform:translateY(-8px); }
+    /* box-shadow overridden to outer-shadow only — the inset rim
+       (rim-crisp/soft/dim) moves to its own dedicated .refract-rim-layer
+       child below instead, since a plain box-shadow on this element
+       would paint BELOW the new .refract-glow-layer child (children
+       always paint above their parent's own box-shadow, regardless of
+       z-index), which is what made the corner look pixelated — the soft
+       glow was sitting on top of the crisp rim rather than underneath it. */
+    #${elId}{ box-shadow:0 18px 40px var(--outer-shadow); }
+    #${elId}.glass-hover:hover{ box-shadow:0 26px 52px var(--outer-shadow-hover); }
+  `;
+  document.head.appendChild(styleEl);
+
+  // Glow layer (z-index 1) — the directional Fresnel-based edge glow,
+  // sits BELOW the rim layer added next.
+  const glowLayer = document.createElement('div');
+  glowLayer.style.cssText = 'position:absolute; inset:0; border-radius:inherit; pointer-events:none; z-index:1; background-size:cover;';
+  el.appendChild(glowLayer);
+
+  // Rim layer (z-index 2) — the crisp inset box-shadow rim, now on its
+  // own layer specifically so it paints ABOVE the glow instead of being
+  // painted over by it.
+  const rimLayer = document.createElement('div');
+  rimLayer.style.cssText = `
+    position:absolute; inset:0; border-radius:inherit; pointer-events:none; z-index:2;
+    box-shadow:
+      inset 0 0 0 1px var(--rim-base),
+      inset 0.5px 0.5px 0 0 var(--rim-crisp),
+      inset 1.5px 1.5px 6px 0 var(--rim-soft),
+      inset -0.5px -0.5px 0 0 var(--rim-dim);
+  `;
+  el.appendChild(rimLayer);
+
+  function regenerateMap(){
+    const rect = el.getBoundingClientRect();
+    if(rect.width < 4 || rect.height < 4) return; // not laid out yet
+    const radius = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 24;
+    const edgeWidth = Math.min(rect.width, rect.height) * edgePct;
+    const mapUrl = generateDisplacementMap(rect.width, rect.height, radius, edgeWidth);
+    feImage.setAttribute('href', mapUrl);
+    feImage.setAttributeNS('http://www.w3.org/1999/xlink', 'href', mapUrl);
+    feImage.setAttribute('width', rect.width);
+    feImage.setAttribute('height', rect.height);
+
+    // Glow map regenerates alongside the displacement map — same trigger
+    // (genuine size change), fixed 45px/30% regardless of card size,
+    // matching the exact values confirmed in testing.
+    const glowUrl = generateGlowMap(rect.width, rect.height, radius, 45, 30);
+    glowLayer.style.backgroundImage = `url(${glowUrl})`;
+  }
+  regenerateMap();
+
+  // Regenerates only on genuine size changes (window resize, responsive
+  // breakpoint switch, orientation change) — debounced so a window drag
+  // doesn't rebuild the map every frame. Hover intensity below is a
+  // separate, cheap mechanism that never touches this.
+  let resizeTimer = null;
+  new ResizeObserver(() => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(regenerateMap, 150);
+  }).observe(el);
+
+  if(hasHoverLift){
+    const LIFT_DURATION = 400; // matches .glass's own transform transition
+    function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
+    let animFrame = null;
+    function animateScale(from, to){
+      if(animFrame) cancelAnimationFrame(animFrame);
+      const start = performance.now();
+      function step(now){
+        const t = Math.min((now - start) / LIFT_DURATION, 1);
+        feDisp.setAttribute('scale', (from + (to - from) * easeOutCubic(t)).toFixed(1));
+        if(t < 1) animFrame = requestAnimationFrame(step);
+      }
+      animFrame = requestAnimationFrame(step);
+    }
+    el.addEventListener('mouseenter', () => animateScale(restScale, hoverScale));
+    el.addEventListener('mouseleave', () => animateScale(hoverScale, restScale));
+  }
+}
+
+// Applied to every persistent glass card. Deliberately excludes the three
+// floating buttons (refresh, theme toggle, last-updated) — those use an
+// expand-pill hover mechanic that changes their actual WIDTH, which
+// conflicts with this technique's core assumption that only `scale`
+// (cheap) changes on hover while the map (expensive) stays fixed at a
+// known size. A width-changing element would need its map rebuilt mid-
+// hover, which would look actively worse than the plain blur it already has.
+['priority-outer-card', 'countdown-outer-card', 'scratchpad-outer-card', 'calendar-outer-card', 'tasks-outer-card'].forEach(id => initRefraction(id));
+initRefraction('dashboard-header', { hasHoverLift: true });
 
 // ================== INIT ==================
 fitExpandPill(document.getElementById('refresh-btn'), 'Refresh'); // static label, only needs setting once
